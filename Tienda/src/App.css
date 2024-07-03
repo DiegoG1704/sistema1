@@ -1,0 +1,54 @@
+#root {
+
+  margin: 0 auto;
+  text-align: center;
+}
+
+.App {
+  display: flex;
+}
+
+.main-content {
+  transition: margin-left 0.3s;
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  margin-top: 60px; /* Deja espacio para el navbar */
+  z-index: 80;
+}
+
+.sidebar-open {
+  margin-left: 200px; /* Ancho del Sidebar cuando está abierto */
+}
+
+.sidebar-closed {
+  margin-left: 50px; /* Ancho del Sidebar cuando está cerrado */
+}
+
+/* Otros estilos existentes */
+.logo {
+  height: 6rem;
+  pointer-events: none;
+}
+
+.logo.react {
+  animation: logo-spin infinite 20s linear;
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+

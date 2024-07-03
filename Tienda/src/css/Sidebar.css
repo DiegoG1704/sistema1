@@ -1,0 +1,70 @@
+/* src/css/Sidebar.css */
+
+.sidebar {
+  position: fixed;
+  top: 0; /* Ajusta según el tamaño de tu navbar */
+  left: 0;
+  width: 200px;
+  height: 100%;
+  background-color: #333;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s;
+  overflow: hidden;
+  z-index: 100; /* Asegúrate de que el sidebar esté por encima del contenido */
+}
+
+.sidebar.closed {
+  width: 60px;
+}
+
+.sidebar-menu {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  flex: 1; /* Asegura que el menú ocupe todo el espacio disponible */
+}
+
+.sidebar-menu li {
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-menu li a {
+  color: white;
+  text-decoration: none; /* Elimina el subrayado */
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-menu li i {
+  margin-right: 10px;
+}
+
+.sidebar-menu li:hover {
+  background-color: #575757;
+}
+
+.sidebar-menu li:hover a {
+  color: white; /* Mantiene el color del texto en hover */
+}
+
+.toggle-button {
+  position: fixed;
+  top: 100px; /* Ajusta la posición vertical según sea necesario */
+  z-index: 200; /* Asegúrate de que el botón esté sobre el contenido */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  border-radius: 50%;
+  border: 5px solid white;
+  width: 50px;
+  height: 50px;
+  color: white; /* Color del ícono */
+  transition: left 0.3s ease; /* Transición para ajustar la posición del botón */
+}
