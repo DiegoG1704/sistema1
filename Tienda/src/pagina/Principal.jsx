@@ -7,11 +7,13 @@ import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 import { InputNumber } from 'primereact/inputnumber';
 import '../css/principal.css';
+import { Dropdown } from 'primereact/dropdown';
 
 export default function Principal() {
   const [products, setProducts] = useState([]);
   const [addDialogVisible, setAddDialogVisible] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [VentaVisible, setVentaVisible] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({
     Nombre: '',
@@ -72,9 +74,17 @@ export default function Principal() {
 
   const VentaButton = (rowData) => {
     return (
-      <Button icon="pi pi-send" label='vender' className="p-button-rounded p-button-Primary p-button-text"/>
+      <Button icon="pi pi-send" label='vender' className="p-button-rounded p-button-Primary p-button-text" onClick={() => setVentaVisible(true)} />
     );
   };
+
+  const [Ventas,setVentas]=useState(null)
+  const venta =[
+    {name:'Vender Lote', code:'VL'},
+    {name:'Verder por paquetes', code:'VP'},
+  ]
+  
+  const [value2, setValue2] = useState(null);
 
   return (
     <>
@@ -148,6 +158,18 @@ export default function Principal() {
         <div className="p-dialog-footer" style={{ margin: '5px' }}>
           <Button label="Cancelar" className="p-button-danger" onClick={() => setEditDialogVisible(false)} />
           <Button label="Guardar" className="p-button-success" onClick={saveProduct} />
+        </div>
+      </Dialog>
+
+      <Dialog header="Venta" visible={VentaVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setVentaVisible(false)}>
+        <div className='p-fluid'>
+          <span>Tipo de venta</span>
+          <Dropdown  placeholder='seleccione tipo de venta ...' optionLabel='name' options={venta} value={Ventas} onChange={(e) => setVentas(e.value)}/>
+          <span>Cantidad</span>
+          <InputNumber inputId="withoutgrouping" value={value2} onValueChange={(e) => setValue2(e.value)} useGrouping={false} />
+        </div>
+        <div className='flex-container'>
+          <Button label='Vender' className="p-button-raised p-button-success" />
         </div>
       </Dialog>
     </>
