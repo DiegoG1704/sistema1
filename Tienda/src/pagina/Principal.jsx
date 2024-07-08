@@ -6,106 +6,205 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 import { InputNumber } from 'primereact/inputnumber';
-import '../css/principal.css';
 import { Dropdown } from 'primereact/dropdown';
+import axios from 'axios';
+import PagVenta from '../Componentes/PagVenta';
 
 export default function Principal() {
   const [products, setProducts] = useState([]);
   const [addDialogVisible, setAddDialogVisible] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
-  const [VentaVisible, setVentaVisible] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({
     Nombre: '',
-    Precio: 0,
+    PrecioVenta: 0,
     FechaProduccion: null,
-    Stock: 0
+    Stock: 0,
+    EmpaquetadoId: null,
+    EstadoId: null
   });
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [empaquetados, setEmpaquetados] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [VentaVisible,setVentaVisible]= useState(false);
 
   useEffect(() => {
-    // Simulación de carga de datos inicial
-    const productData = [
-      { Nombre: 'Producto 1', Precio: 100, FechaProduccion: '2023-06-25', Stock: 50 },
-      { Nombre: 'Producto 2', Precio: 150, FechaProduccion: '2023-06-20', Stock: 30 },
-      { Nombre: 'Producto 3', Precio: 200, FechaProduccion: '2023-06-15', Stock: 20 },
-      { Nombre: 'Producto 4', Precio: 250, FechaProduccion: '2023-06-10', Stock: 10 },
-      { Nombre: 'Producto 5', Precio: 300, FechaProduccion: '2023-06-05', Stock: 5 }
-    ];
-    setProducts(productData);
+    fetchProducts();
+    fetchEmpaquetados();
+    fetchEstados();
   }, []);
 
-  const openAddProductDialog = () => {
-    setNewProduct({
-      Nombre: '',
-      Precio: 0,
-      FechaProduccion: null,
-      Stock: 0
-    });
-    setAddDialogVisible(true);
+  const getEmpaquetadoNombreById = (id) => {
+    const empaquetado = empaquetados.find(item => item.Id === id);
+    return empaquetado ? empaquetado.Nombre : '';
   };
 
-  const openEditProductDialog = (product) => {
-    setCurrentProduct(product);
-    setNewProduct({ ...product });
-    setEditDialogVisible(true);
+  const getEstadoNombreById = (id) => {
+    const estado = estados.find(item => item.Id === id);
+    return estado ? estado.Nombre : '';
   };
 
-  const saveProduct = () => {
-    if (editDialogVisible) {
-      setProducts(products.map(p => p === currentProduct ? newProduct : p));
-      setEditDialogVisible(false);
-    } else {
-      setProducts([...products, newProduct]);
+  const fetchEmpaquetados = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/empaquetados');
+      setEmpaquetados(response.data);
+    } catch (error) {
+      console.error('Error fetching empaquetados:', error);
+    }
+  };
+
+  const fetchEstados = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/estados');
+      setEstados(response.data);
+    } catch (error) {
+      console.error('Error fetching estados:', error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/productos');
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Error al obtener los productos:', error);
+    }
+  };
+
+  const addProduct = async () => {
+    try {
+      // Aquí debes definir la lógica para formatear el producto antes de enviarlo al servidor
+      const formattedProduct = {
+        Nombre: newProduct.Nombre,
+        PrecioVenta: newProduct.PrecioVenta,
+        FechaProduccion: newProduct.FechaProduccion,
+        Stock: newProduct.Stock,
+        EmpaquetadoId: newProduct.EmpaquetadoId,
+        EstadoId: newProduct.EstadoId
+      };
+
+      const response = await axios.post('http://localhost:8081/productos', formattedProduct);
+      setProducts([...products, response.data]);
       setAddDialogVisible(false);
+      setNewProduct({
+        Nombre: '',
+        PrecioVenta: 0,
+        FechaProduccion: null,
+        Stock: 0,
+        EmpaquetadoId: null,
+        EstadoId: null
+      });
+    } catch (error) {
+      console.error('Error al agregar producto:', error);
+    }
+  };
+
+  const editProduct = async () => {
+    try {
+      if (!selectedProduct) {
+        console.error('No product selected for editing.');
+        return;
+      }
+  
+      // Aquí también debes definir la lógica para formatear el producto antes de enviarlo al servidor
+      const formattedProduct = {
+        Nombre: newProduct.Nombre,
+        PrecioVenta: newProduct.PrecioVenta,
+        FechaProduccion: newProduct.FechaProduccion,
+        Stock: newProduct.Stock,
+        EmpaquetadoId: newProduct.EmpaquetadoId,
+        EstadoId: newProduct.EstadoId
+      };
+  
+      const response = await axios.put(`http://localhost:8081/productos/${selectedProduct.Id}`, formattedProduct);
+      setProducts(products.map(p => (p.Id === selectedProduct.Id ? { ...selectedProduct, ...formattedProduct } : p)));
+      setEditDialogVisible(false);
+      setSelectedProduct(null);
+      setNewProduct({
+        Nombre: '',
+        PrecioVenta: 0,
+        FechaProduccion: null,
+        Stock: 0,
+        EmpaquetadoId: null,
+        EstadoId: null
+      });
+    } catch (error) {
+      console.error('Error al actualizar producto:', error);
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    try {
+      await axios.delete(`http://localhost:8081/productos/${productId}`);
+      const updatedProducts = products.filter(product => product.Id !== productId);
+      setProducts(updatedProducts);
+      alert("Producto eliminado correctamente");
+    } catch (error) {
+      console.error('Error al eliminar el producto:', error);
+      alert("Error al eliminar el producto");
     }
   };
 
   const EditarButton = (rowData) => {
     return (
-      <Button icon="pi pi-pencil" className="p-button-rounded p-button-warning p-button-text" onClick={() => openEditProductDialog(rowData)} />
+      <Button
+        icon="pi pi-pencil"
+        className="p-button-rounded p-button-warning p-button-text"
+        onClick={() => {
+          setNewProduct({ ...rowData }); // Set newProduct state to the selected rowData
+          setSelectedProduct(rowData); // Set selectedProduct state
+          setEditDialogVisible(true);
+        }}
+      />
     );
   };
 
   const EliminarButton = (rowData) => {
     return (
-      <Button icon="pi pi-trash" className="p-button-rounded p-button-danger p-button-text" onClick={() => setProducts(products.filter(p => p !== rowData))} />
+      <Button icon="pi pi-trash" className="p-button-rounded p-button-danger p-button-text" onClick={() => deleteProduct(rowData.Id)} />
     );
   };
 
   const VentaButton = (rowData) => {
     return (
-      <Button icon="pi pi-send" label='vender' className="p-button-rounded p-button-Primary p-button-text" onClick={() => setVentaVisible(true)} />
+      <Button
+        icon="pi pi-send"
+        label="Vender"
+        className="p-button-rounded p-button-primary p-button-text"
+        onClick={() => {
+          setNewProduct(rowData); // Actualiza el producto seleccionado
+          setVentaVisible(true); // Muestra el diálogo de venta
+        }}
+      />
     );
   };
-
-  const [Ventas,setVentas]=useState(null)
-  const venta =[
-    {name:'Vender Lote', code:'VL'},
-    {name:'Verder por paquetes', code:'VP'},
-  ]
   
-  const [value2, setValue2] = useState(null);
 
   return (
     <>
       <h1>Lista de Productos Terminados</h1>
       <div className="flex-container" style={{ marginBottom: '20px' }}>
         <span>Aquí se visualizarán los productos que se terminaron de realizar</span>
-        <Button label="Agregar" icon="pi pi-plus" className="p-button-raised p-button-success" onClick={openAddProductDialog} />
+        <Button label="Agregar" icon="pi pi-plus" className="p-button-raised p-button-success" onClick={() => setAddDialogVisible(true)} />
       </div>
       <div className="card">
-        <DataTable value={products} responsiveLayout="scroll" tableStyle={{ minWidth: '50rem' }}>
-          <Column field="Lote" header="Nº Lote"></Column>
+        <DataTable value={products} tableStyle={{ minWidth: '50rem' }}>
           <Column field="Nombre" header="Nombre Producto"></Column>
-          <Column field="Precio" header="Precio"></Column>
-          <Column field="FechaProduccion" header="Fecha de producción"></Column>
+          <Column field="PrecioVenta" header="Precio"></Column>
+          <Column field="FechaProduccion" header="Fecha de producción" body={(rowData) => new Date(rowData.FechaProduccion).toLocaleDateString()}></Column>
           <Column field="Stock" header="Stock"></Column>
-          <Column field="Enpaquetado" header="Enpaquetado"></Column>
-          <Column body={VentaButton} header="Venta"></Column>
+          <Column field="EmpaquetadoId" header="Empaquetado" body={(rowData) => getEmpaquetadoNombreById(rowData.EmpaquetadoId)}></Column>
+          <Column field='EstadoId' header="Estado" body={(rowData) => getEstadoNombreById(rowData.EstadoId)}></Column>
+          <Column body={VentaButton} header="Vender"></Column>
           <Column header="Editar" body={EditarButton}></Column>
           <Column header="Eliminar" body={EliminarButton}></Column>
         </DataTable>
       </div>
+
+      {/* Add Product Dialog */}
+      <Dialog header={`Historial de venta de ${newProduct.Nombre}`} visible={VentaVisible} style={{width:'60vw'}} onHide={() => setVentaVisible(false)}>
+        <PagVenta/>
+      </Dialog>
+
 
       {/* Add Product Dialog */}
       <Dialog header="Agregar Producto" visible={addDialogVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setAddDialogVisible(false)}>
@@ -116,7 +215,7 @@ export default function Principal() {
           </div>
           <div className="p-field">
             <label htmlFor="precio">Precio</label>
-            <InputNumber id="precio" value={newProduct.Precio} onChange={(e) => setNewProduct({ ...newProduct, Precio: e.value })} mode="currency" currency="USD" locale="en-US" />
+            <InputNumber id="precio" value={newProduct.PrecioVenta} onChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
           </div>
           <div className="p-field">
             <label htmlFor="fecha">Fecha de Producción</label>
@@ -124,14 +223,18 @@ export default function Principal() {
           </div>
           <div className="p-field">
             <label htmlFor="stock">Stock</label>
-            <InputNumber id="stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} mode="decimal" />
+            <InputNumber id="stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
+          </div>
+          <div className="p-field">
+            <label htmlFor="empaquetado">Empaquetado</label>
+            <Dropdown id="empaquetado" value={newProduct.EmpaquetadoId} options={empaquetados} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
+          </div>
+          <div className="p-field">
+            <label htmlFor="estado">Estado</label>
+            <Dropdown id="estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
           </div>
         </div>
-
-        <div className="p-dialog-footer" style={{ margin: '5px' }}>
-          <Button label="Cancelar" className="p-button-danger" onClick={() => setAddDialogVisible(false)} />
-          <Button label="Agregar" className="p-button-success" onClick={saveProduct} />
-        </div>
+        <Button label="Agregar" icon="pi pi-check" onClick={addProduct} />
       </Dialog>
 
       {/* Edit Product Dialog */}
@@ -143,34 +246,26 @@ export default function Principal() {
           </div>
           <div className="p-field">
             <label htmlFor="precio">Precio</label>
-            <InputNumber id="precio" value={newProduct.Precio} onChange={(e) => setNewProduct({ ...newProduct, Precio: e.value })} mode="currency" currency="USD" locale="en-US" />
+            <InputNumber id="precio" value={newProduct.PrecioVenta} onChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
           </div>
           <div className="p-field">
             <label htmlFor="fecha">Fecha de Producción</label>
-            <Calendar id="fecha" value={newProduct.FechaProduccion} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} dateFormat="yy-mm-dd" />
+            <Calendar id="fecha"  value={newProduct.FechaProduccion ? new Date(newProduct.FechaProduccion) : null} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} dateFormat="yy-mm-dd" />
           </div>
           <div className="p-field">
             <label htmlFor="stock">Stock</label>
-            <InputNumber id="stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} mode="decimal" />
+            <InputNumber id="stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
+          </div>
+          <div className="p-field">
+            <label htmlFor="empaquetado">Empaquetado</label>
+            <Dropdown id="empaquetado" value={newProduct.EmpaquetadoId} options={empaquetados} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
+          </div>
+          <div className="p-field">
+            <label htmlFor="estado">Estado</label>
+            <Dropdown id="estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
           </div>
         </div>
-
-        <div className="p-dialog-footer" style={{ margin: '5px' }}>
-          <Button label="Cancelar" className="p-button-danger" onClick={() => setEditDialogVisible(false)} />
-          <Button label="Guardar" className="p-button-success" onClick={saveProduct} />
-        </div>
-      </Dialog>
-
-      <Dialog header="Venta" visible={VentaVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setVentaVisible(false)}>
-        <div className='p-fluid'>
-          <span>Tipo de venta</span>
-          <Dropdown  placeholder='seleccione tipo de venta ...' optionLabel='name' options={venta} value={Ventas} onChange={(e) => setVentas(e.value)}/>
-          <span>Cantidad</span>
-          <InputNumber inputId="withoutgrouping" value={value2} onValueChange={(e) => setValue2(e.value)} useGrouping={false} />
-        </div>
-        <div className='flex-container'>
-          <Button label='Vender' className="p-button-raised p-button-success" />
-        </div>
+        <Button label="Guardar" icon="pi pi-check" onClick={editProduct} />
       </Dialog>
     </>
   );

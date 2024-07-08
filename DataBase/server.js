@@ -21,119 +21,152 @@ bd.connect((err) => {
     console.log("Conectado a la base de datos.");
 });
 
-//------------------------------------------------------------------------------
-// CRUD APIs for GastosDiarios
-//------------------------------------------------------------------------------
-// Obtener todos los gastos diarios
-app.get('/gastosDiarios', (req, res) => {
-    const sql = 'SELECT * FROM GastoDiario';
-    bd.query(sql, (err, results) => {
+// Obtener todos los productos
+app.get("/productos", (req, res) => {
+    bd.query("SELECT * FROM producto", (err, results) => {
         if (err) {
-            return res.status(500).json({ error: err.message });
+            console.error("Error obteniendo productos:", err);
+            res.status(500).json({ error: "Error obteniendo productos" });
+        } else {
+            res.json(results);
         }
-        res.json(results);
     });
 });
 
-// Agregar un nuevo gasto diario
-app.post('/gastosDiarios', (req, res) => {
-    const { Fecha } = req.body;
-    const sql = 'INSERT INTO GastoDiario (Fecha) VALUES (?)';
-    bd.query(sql, [Fecha], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ id: results.insertId, Fecha });
-    });
-});
-
-// Eliminar un gasto diario por ID
-app.delete('/gastosDiarios/:id', (req, res) => {
+// Obtener un producto por ID
+app.get("/productos/:id", (req, res) => {
     const { id } = req.params;
-    const sql = 'DELETE FROM GastoDiario WHERE ID = ?';
-    bd.query(sql, [id], (err, results) => {
+    bd.query("SELECT * FROM producto WHERE Id = ?", [id], (err, results) => {
         if (err) {
-            return res.status(500).json({ error: err.message });
+            console.error("Error obteniendo producto:", err);
+            res.status(500).json({ error: "Error obteniendo producto" });
+        } else if (results.length === 0) {
+            res.status(404).json({ error: "Producto no encontrado" });
+        } else {
+            res.json(results[0]);
         }
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ error: 'Gasto diario no encontrado' });
-        }
-        res.json({ message: 'Gasto diario eliminado exitosamente' });
-    });
-});
-//------------------------------------------------------------------------------
-// CRUD APIs for PagoMaterial
-//------------------------------------------------------------------------------
-
-// Obtener todos los materiales
-app.get('/pagoMaterial', (req, res) => {
-    const sql = 'SELECT * FROM PagoMaterial';
-    bd.query(sql, (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
     });
 });
 
-// Obtener un material por ID
-app.get('/pagoMaterial/:id', (req, res) => {
-    const { id } = req.params;
-    const sql = 'SELECT * FROM PagoMaterial WHERE ID = ?';
+// Crear un nuevo producto
+app.post("/productos", (req, res) => {
+    const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId } = req.body;
+    bd.query(
+        "INSERT INTO producto (Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId) VALUES (?, ?, ?, ?, ?, ?)",
+        [Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId],
+        (err, results) => {
+            if (err) {
+                console.error("Error creando producto:", err);
+                res.status(500).json({ error: "Error creando producto" });
+            } else {
+                res.status(201).json({ id: results.insertId, ...req.body });
+            }
+        }
+    );
+});
+
+// Actualizar un producto por ID
+app.put('/productos/:id', (req, res) => {
+    const id = req.params.id;
+    const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId } = req.body;
+  
+    const query = `UPDATE producto SET Nombre = ?, PrecioVenta = ?, FechaProduccion = ?, Stock = ?, EmpaquetadoId = ?, EstadoId = ? WHERE Id = ?`;
+  
+    bd.query(query, [Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId, id], (err, results) => {
+      if (err) {
+        console.error('Error actualizando producto:', err);
+        res.status(500).send('Error actualizando producto');
+      } else if (results.affectedRows === 0) {
+        res.status(404).json({ error: 'Producto no encontrado' });
+      } else {
+        res.status(200).json({ message: 'Producto actualizado correctamente' });
+      }
+    });
+});
+
+
+// Eliminar un producto por ID
+app.delete("/productos/:id", (req, res) => {
+    const {id} = req.params;
+
+    const sql = "DELETE FROM producto WHERE Id = ?";
     bd.query(sql, [id], (err, result) => {
         if (err) {
-            return res.status(500).json({ error: err.message });
+            console.error(err);
+            return res.status(500).json({ error: "Error interno del servidor" });
         }
-        if (result.length === 0) {
-            return res.status(404).json({ error: 'Material no encontrado' });
-        }
-        res.json(result[0]);
-    });
-});
 
-// Agregar un nuevo material
-app.post('/pagoMaterial', (req, res) => {
-    const { Nombre, Proveedor, UnidadM, Precio, Cantidad } = req.body;
-    const sql = 'INSERT INTO PagoMaterial (Nombre, Proveedor, UnidadM, Precio, Cantidad) VALUES (?, ?, ?, ?, ?)';
-    bd.query(sql, [Nombre, Proveedor, UnidadM, Precio, Cantidad], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ id: result.insertId, Nombre, Proveedor, UnidadM, Precio, Cantidad });
-    });
-});
-
-// Actualizar un material por ID
-app.put('/pagoMaterial/:id', (req, res) => {
-    const { id } = req.params;
-    const { Nombre, Proveedor, UnidadM, Precio, Cantidad } = req.body;
-    const sql = 'UPDATE PagoMaterial SET Nombre = ?, Proveedor = ?, UnidadM = ?, Precio = ?, Cantidad = ? WHERE ID = ?';
-    bd.query(sql, [Nombre, Proveedor, UnidadM, Precio, Cantidad, id], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+        // Verificar si se eliminó correctamente
         if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Material no encontrado' });
+            return res.status(404).json({ error: "trabajador no encontrado" });
         }
-        res.json({ id, Nombre, Proveedor, UnidadM, Precio, Cantidad });
+
+        // Obtener los destinos actualizados después de la eliminación
+        bd.query("SELECT * FROM producto", (err, rows) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error interno del servidor" });
+            }
+            res.json(rows);
+        });
     });
 });
 
-// Eliminar un material por ID
-app.delete('/pagoMaterial/:id', (req, res) => {
-    const { id } = req.params;
-    const sql = 'DELETE FROM PagoMaterial WHERE ID = ?';
-    bd.query(sql, [id], (err, result) => {
+
+// Ruta para obtener todos los registros de la tabla Empaquetado
+app.get("/empaquetados", (req, res) => {
+    const sql = "SELECT * FROM Empaquetado";
+    bd.query(sql, (err, result) => {
         if (err) {
-            return res.status(500).json({ error: err.message });
+            console.error("Error al obtener datos de Empaquetado:", err);
+            res.status(500).json({ error: "Error al obtener datos de Empaquetado" });
+            return;
         }
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Material no encontrado' });
-        }
-        res.json({ message: 'Material eliminado exitosamente' });
+        res.json(result);
     });
 });
 
+// Obtener un producto por ID
+app.get("/empaquetados/:id", (req, res) => {
+    const { id } = req.params;
+    bd.query("SELECT * FROM Empaquetado WHERE Id = ?", [id], (err, results) => {
+        if (err) {
+            console.error("Error obteniendo producto:", err);
+            res.status(500).json({ error: "Error obteniendo producto" });
+        } else if (results.length === 0) {
+            res.status(404).json({ error: "Producto no encontrado" });
+        } else {
+            res.json(results[0]);
+        }
+    });
+});
+
+// Ruta para obtener todos los registros de la tabla Estado
+app.get("/estados", (req, res) => {
+    const sql = "SELECT * FROM Estado";
+    bd.query(sql, (err, result) => {
+        if (err) {
+            console.error("Error al obtener datos de Estado:", err);
+            res.status(500).json({ error: "Error al obtener datos de Estado" });
+            return;
+        }
+        res.json(result);
+    });
+});
+
+app.get("/estados/:id", (req, res) => {
+    const { id } = req.params;
+    bd.query("SELECT * FROM Estado WHERE Id = ?", [id], (err, results) => {
+        if (err) {
+            console.error("Error obteniendo producto:", err);
+            res.status(500).json({ error: "Error obteniendo producto" });
+        } else if (results.length === 0) {
+            res.status(404).json({ error: "Producto no encontrado" });
+        } else {
+            res.json(results[0]);
+        }
+    });
+});
 
 app.listen(8081, () => {
     console.log("Servidor iniciado en el puerto 8081");
