@@ -9,6 +9,7 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import axios from 'axios';
 import PagVenta from '../Componentes/PagVenta';
+import { useNavigate } from 'react-router-dom';
 
 export default function Principal() {
   const [products, setProducts] = useState([]);
@@ -25,7 +26,7 @@ export default function Principal() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [empaquetados, setEmpaquetados] = useState([]);
   const [estados, setEstados] = useState([]);
-  const [VentaVisible,setVentaVisible]= useState(false);
+  const [ventaVisible, setVentaVisible] = useState(false); // Renombrado a ventaVisible
 
   useEffect(() => {
     fetchProducts();
@@ -72,7 +73,6 @@ export default function Principal() {
 
   const addProduct = async () => {
     try {
-      // Aquí debes definir la lógica para formatear el producto antes de enviarlo al servidor
       const formattedProduct = {
         Nombre: newProduct.Nombre,
         PrecioVenta: newProduct.PrecioVenta,
@@ -105,7 +105,6 @@ export default function Principal() {
         return;
       }
   
-      // Aquí también debes definir la lógica para formatear el producto antes de enviarlo al servidor
       const formattedProduct = {
         Nombre: newProduct.Nombre,
         PrecioVenta: newProduct.PrecioVenta,
@@ -150,8 +149,8 @@ export default function Principal() {
         icon="pi pi-pencil"
         className="p-button-rounded p-button-warning p-button-text"
         onClick={() => {
-          setNewProduct({ ...rowData }); // Set newProduct state to the selected rowData
-          setSelectedProduct(rowData); // Set selectedProduct state
+          setNewProduct({ ...rowData });
+          setSelectedProduct(rowData);
           setEditDialogVisible(true);
         }}
       />
@@ -163,20 +162,18 @@ export default function Principal() {
       <Button icon="pi pi-trash" className="p-button-rounded p-button-danger p-button-text" onClick={() => deleteProduct(rowData.Id)} />
     );
   };
-
+  const navigate = useNavigate();
   const VentaButton = (rowData) => {
     return (
       <Button
         icon="pi pi-send"
         label="Vender"
         className="p-button-rounded p-button-primary p-button-text"
-        onClick={() => {
-          setNewProduct(rowData); // Actualiza el producto seleccionado
-          setVentaVisible(true); // Muestra el diálogo de venta
-        }}
+        onClick={() => navigate('/venta')}
       />
     );
   };
+
   
 
   return (
@@ -199,12 +196,6 @@ export default function Principal() {
           <Column header="Eliminar" body={EliminarButton}></Column>
         </DataTable>
       </div>
-
-      {/* Add Product Dialog */}
-      <Dialog header={`Historial de venta de ${newProduct.Nombre}`} visible={VentaVisible} style={{width:'60vw'}} onHide={() => setVentaVisible(false)}>
-        <PagVenta/>
-      </Dialog>
-
 
       {/* Add Product Dialog */}
       <Dialog header="Agregar Producto" visible={addDialogVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setAddDialogVisible(false)}>
@@ -234,38 +225,44 @@ export default function Principal() {
             <Dropdown id="estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
           </div>
         </div>
-        <Button label="Agregar" icon="pi pi-check" onClick={addProduct} />
+        <div className="p-dialog-footer">
+          <Button label="Cancelar" className="p-button-text" onClick={() => setAddDialogVisible(false)} />
+          <Button label="Agregar" className="p-button-success" onClick={addProduct} />
+        </div>
       </Dialog>
 
       {/* Edit Product Dialog */}
       <Dialog header="Editar Producto" visible={editDialogVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setEditDialogVisible(false)}>
         <div className="p-fluid flex" style={{ width: '100%' }}>
           <div className="p-field">
-            <label htmlFor="nombre">Nombre</label>
-            <InputText id="nombre" value={newProduct.Nombre} onChange={(e) => setNewProduct({ ...newProduct, Nombre: e.target.value })} />
+            <label htmlFor="edit-nombre">Nombre</label>
+            <InputText id="edit-nombre" value={newProduct.Nombre} onChange={(e) => setNewProduct({ ...newProduct, Nombre: e.target.value })} />
           </div>
           <div className="p-field">
-            <label htmlFor="precio">Precio</label>
-            <InputNumber id="precio" value={newProduct.PrecioVenta} onChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
+            <label htmlFor="edit-precio">Precio</label>
+            <InputNumber id="edit-precio" value={newProduct.PrecioVenta} onChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
           </div>
           <div className="p-field">
-            <label htmlFor="fecha">Fecha de Producción</label>
-            <Calendar id="fecha"  value={newProduct.FechaProduccion ? new Date(newProduct.FechaProduccion) : null} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} dateFormat="yy-mm-dd" />
+            <label htmlFor="edit-fecha">Fecha de Producción</label>
+            <Calendar id="edit-fecha" value={newProduct.FechaProduccion} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} dateFormat="yy-mm-dd" />
           </div>
           <div className="p-field">
-            <label htmlFor="stock">Stock</label>
-            <InputNumber id="stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
+            <label htmlFor="edit-stock">Stock</label>
+            <InputNumber id="edit-stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
           </div>
           <div className="p-field">
-            <label htmlFor="empaquetado">Empaquetado</label>
-            <Dropdown id="empaquetado" value={newProduct.EmpaquetadoId} options={empaquetados} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
+            <label htmlFor="edit-empaquetado">Empaquetado</label>
+            <Dropdown id="edit-empaquetado" value={newProduct.EmpaquetadoId} options={empaquetados} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
           </div>
           <div className="p-field">
-            <label htmlFor="estado">Estado</label>
-            <Dropdown id="estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
+            <label htmlFor="edit-estado">Estado</label>
+            <Dropdown id="edit-estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
           </div>
         </div>
-        <Button label="Guardar" icon="pi pi-check" onClick={editProduct} />
+        <div className="p-dialog-footer">
+          <Button label="Cancelar" className="p-button-text" onClick={() => setEditDialogVisible(false)} />
+          <Button label="Guardar" className="p-button-warning" onClick={editProduct} />
+        </div>
       </Dialog>
     </>
   );

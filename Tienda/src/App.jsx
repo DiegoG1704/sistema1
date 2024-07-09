@@ -11,6 +11,7 @@ import 'primereact/resources/themes/saga-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import Ganancias from './pagina/ganancias';
+import PagVenta from './Componentes/PagVenta';
 
 
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="/gastos" element={<Gastos/>} />
           <Route path="/maquinas" element={<Maquinas/>} />
           <Route path="/ganancias" element={<Ganancias/>} />
+          <Route path="/venta" element={<PagVenta/>} />
         </Routes>
       </div>
     </div>
