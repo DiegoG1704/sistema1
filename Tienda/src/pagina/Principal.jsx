@@ -174,7 +174,27 @@ export default function Principal() {
     );
   };
 
-  
+  // En Principal.jsx
+
+const actualizarStock = async (productoId, cantidadVendida) => {
+  try {
+    const producto = products.find(p => p.Id === productoId);
+    if (!producto) {
+      console.error('Producto no encontrado para actualizar el stock.');
+      return;
+    }
+
+    const nuevoStock = producto.Stock - cantidadVendida;
+    const response = await axios.put(`http://localhost:8081/productos/${productoId}`, { ...producto, Stock: nuevoStock });
+    const updatedProduct = response.data;
+    setProducts(products.map(p => (p.Id === updatedProduct.Id ? updatedProduct : p)));
+  } catch (error) {
+    console.error('Error al actualizar el stock del producto:', error);
+  }
+};
+
+// Dentro de la función Principal
+<PagVenta actualizarStock={actualizarStock} />
 
   return (
     <>
