@@ -32,6 +32,10 @@ export default function Principal() {
     fetchProducts();
     fetchEmpaquetados();
     fetchEstados();
+    fetchVenta ();
+    fetchClientes();
+    fetchTipoPagos();
+    fetchTiposComprobante();
   }, []);
 
   const getEmpaquetadoNombreById = (id) => {
@@ -163,38 +167,68 @@ export default function Principal() {
     );
   };
   const navigate = useNavigate();
-  const VentaButton = (rowData) => {
+  // const VentaButton = (rowData) => {
+  //   return (
+  //     <Button
+  //       icon="pi pi-send"
+  //       label="Vender"
+  //       className="p-button-rounded p-button-primary p-button-text"
+  //       onClick={() => navigate('/venta')}
+  //     />
+  //   );
+  // };
+
+  const [ventas, setVentas] = useState([]);
+  const [productos, setProductos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [tiposComprobante, setTiposComprobante] = useState([]);
+  const [tiposPago, setTiposPago] = useState([]);
+  const fetchClientes = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/clientes');
+      setClientes(response.data);
+    } catch (error) {
+      console.error('Error al obtener clientes:', error);
+    }
+  };
+
+  const fetchTiposComprobante = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/tiposcomprobantes');
+      setTiposComprobante(response.data);
+    } catch (error) {
+      console.error('Error al obtener tipos de comprobante:', error);
+    }
+  };
+
+  const fetchTipoPagos = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/TipoPagos');
+      setTiposPago(response.data);
+    } catch (error) {
+      console.error('Error al obtener tipos de pago:', error);
+    }
+  };
+  const fetchVenta = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/ventas');
+      setVentas(response.data);
+    } catch (error) {
+      console.error('Error al obtener las ventas:', error);
+    }
+  };
+
+  const [HistVisible,setHistVisible]=useState(false)
+    const Historial = (rowData) => {
     return (
       <Button
         icon="pi pi-send"
-        label="Vender"
+        label="Historial"
         className="p-button-rounded p-button-primary p-button-text"
-        onClick={() => navigate('/venta')}
+        onClick={() => setHistVisible(true)}
       />
     );
   };
-
-  // En Principal.jsx
-
-const actualizarStock = async (productoId, cantidadVendida) => {
-  try {
-    const producto = products.find(p => p.Id === productoId);
-    if (!producto) {
-      console.error('Producto no encontrado para actualizar el stock.');
-      return;
-    }
-
-    const nuevoStock = producto.Stock - cantidadVendida;
-    const response = await axios.put(`http://localhost:8081/productos/${productoId}`, { ...producto, Stock: nuevoStock });
-    const updatedProduct = response.data;
-    setProducts(products.map(p => (p.Id === updatedProduct.Id ? updatedProduct : p)));
-  } catch (error) {
-    console.error('Error al actualizar el stock del producto:', error);
-  }
-};
-
-// Dentro de la función Principal
-<PagVenta actualizarStock={actualizarStock} />
 
   return (
     <>
@@ -211,11 +245,21 @@ const actualizarStock = async (productoId, cantidadVendida) => {
           <Column field="Stock" header="Stock"></Column>
           <Column field="EmpaquetadoId" header="Empaquetado" body={(rowData) => getEmpaquetadoNombreById(rowData.EmpaquetadoId)}></Column>
           <Column field='EstadoId' header="Estado" body={(rowData) => getEstadoNombreById(rowData.EstadoId)}></Column>
-          <Column body={VentaButton} header="Vender"></Column>
+          <Column body={Historial} header="Vender"></Column>
           <Column header="Editar" body={EditarButton}></Column>
           <Column header="Eliminar" body={EliminarButton}></Column>
         </DataTable>
       </div>
+      <Dialog header='Historial del producto ' style={{ width: '50vw', maxWidth: '90vw' }} visible={HistVisible} onHide={() => setHistVisible(false)}>
+        <DataTable value={ventas} tableStyle={{ minWidth: '50rem' }}>
+          <Column field="ProductoId" header="Producto" body={rowData => products.find(producto => producto.Id === rowData.ProductoId)?.Nombre}></Column>
+          <Column field="ClienteId" header="Cliente" body={rowData => clientes.find(cliente => cliente.Id === rowData.ClienteId)?.Nombre}></Column>
+          <Column field="TipoComprobanteId" header="Tipo de Comprobante" body={rowData => tiposComprobante.find(tipo => tipo.Id === rowData.TipoComprobanteId)?.Nombre}></Column>
+          <Column field="TipoPagoId" header="Tipo de Pago" body={rowData => tiposPago.find(tipo => tipo.Id === rowData.TipoPagoId)?.Nombre}></Column>
+          <Column field="Cantidad" header="Cantidad"></Column>
+          <Column field="Total" header="Total"></Column>
+        </DataTable>
+      </Dialog>
 
       {/* Add Product Dialog */}
       <Dialog header="Agregar Producto" visible={addDialogVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setAddDialogVisible(false)}>
