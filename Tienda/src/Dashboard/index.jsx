@@ -19,7 +19,7 @@ export default function Home({ isOpen, toggleSidebar }) {
           </li>
           <li onClick={() => navigate('/tecnologia')}>
             <i className="pi pi-info-circle" style={{ fontSize: '20px' }} />
-            {isOpen && <span style={{ fontWeight: 'bold', fontSize: '20px' }}>Materiales</span>}
+            {isOpen && <span style={{ fontWeight: 'bold', fontSize: '20px' }}>Ventas</span>}
           </li>
           <li onClick={() => navigate('/gastos')}>
             <i className="pi pi-envelope" style={{ fontSize: '20px' }} />

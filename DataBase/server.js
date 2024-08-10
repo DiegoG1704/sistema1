@@ -195,6 +195,22 @@ app.get("/clientes/:id", (req, res) => {
     });
 });
 
+
+app.post('/clientes', (req, res) => {
+    const { DNI, Nombre, Apellido, Telefono, Correo } = req.body;
+    
+    bd.query("INSERT INTO Cliente (DNI, Nombre, Apellido, Telefono, Correo) VALUES (?, ?, ?, ?, ?)", 
+        [DNI, Nombre, Apellido, Telefono, Correo], 
+        (err, result) => {
+            if (err) {
+                console.error('Error insertando cliente:', err);
+                res.status(500).json({ error: 'Error insertando cliente' });
+            } else {
+                res.status(201).json({ id: result.insertId });
+            }
+    });
+});
+
 // Ruta para obtener todos los registros de la tabla Cliente
 app.get("/tiposcomprobantes", (req, res) => {
     const sql = "SELECT * FROM TipoComprobante";
@@ -249,17 +265,102 @@ app.get("/TipoPagos/:id", (req, res) => {
     });
 });
 
-// Crear una nueva venta
-app.post("/ventas", (req, res) => {
-    const { ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, Total } = req.body;
-    const query = "INSERT INTO Venta (ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, Total) VALUES (?, ?, ?, ?, ?, ?)";
-    bd.query(query, [ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, Total], (err, result) => {
+// Ruta para obtener todos los registros de la tabla Cliente
+app.get("/VentaProductos", (req, res) => {
+    const sql = "SELECT * FROM VentaProducto";
+    bd.query(sql, (err, result) => {
         if (err) {
-            console.error("Error insertando venta:", err);
-            res.status(500).json({ error: "Error insertando venta" });
-        } else {
-            res.status(201).json({ id: result.insertId });
+            console.error("Error al obtener datos de VentaProducto:", err);
+            res.status(500).json({ error: "Error al obtener datos de VentaProducto" });
+            return;
         }
+        res.json(result);
+    });
+});
+
+app.get("/VentaProductos/:id", (req, res) => {
+    const { id } = req.params;
+    bd.query("SELECT * FROM VentaProducto WHERE Id = ?", [id], (err, results) => {
+        if (err) {
+            console.error("Error obteniendo VentaProducto:", err);
+            res.status(500).json({ error: "Error obteniendo VentaProducto" });
+        } else if (results.length === 0) {
+            res.status(404).json({ error: "VentaProducto no encontrado" });
+        } else {
+            res.json(results[0]);
+        }
+    });
+});
+
+// Ruta para crear una venta con varios productos
+app.post('/ventas', (req, res) => {
+    const { clienteId, tipoComprobanteId, tipoPagoId, total, productos, fecha } = req.body;
+
+    if (!clienteId || !tipoComprobanteId || !tipoPagoId || !productos || productos.length === 0) {
+        return res.status(400).json({ error: 'Datos incompletos para realizar la venta' });
+    }
+
+    // Iniciar una transacción
+    bd.beginTransaction((err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al iniciar la transacción' });
+        }
+
+        // Insertar la venta
+        const ventaQuery = `INSERT INTO Venta (ClienteId, TipoComprobanteId, TipoPagoId, Total, Fecha) VALUES (?, ?, ?, ?, ?)`;
+        bd.query(ventaQuery, [clienteId, tipoComprobanteId, tipoPagoId, total, fecha], (err, result) => {
+            if (err) {
+                return bd.rollback(() => {
+                    res.status(500).json({ error: 'Error al insertar la venta' });
+                });
+            }
+
+            const ventaId = result.insertId;
+
+            // Insertar los productos de la venta
+            const ventaProductoQuery = `INSERT INTO VentaProducto (VentaId, ProductoId, Cantidad, Precio) VALUES ?`;
+            const ventaProductoData = productos.map(p => [ventaId, p.productoId, p.cantidad, p.precio]);
+
+            bd.query(ventaProductoQuery, [ventaProductoData], (err, result) => {
+                if (err) {
+                    return bd.rollback(() => {
+                        res.status(500).json({ error: 'Error al insertar los productos de la venta' });
+                    });
+                }
+
+                // Actualizar el stock de los productos
+                const stockUpdates = productos.map(p => {
+                    return new Promise((resolve, reject) => {
+                        const stockQuery = `UPDATE Producto SET Stock = Stock - ? WHERE Id = ?`;
+                        bd.query(stockQuery, [p.cantidad, p.productoId], (err, result) => {
+                            if (err) {
+                                return reject(err);
+                            }
+                            resolve(result);
+                        });
+                    });
+                });
+
+                // Ejecutar todas las actualizaciones de stock
+                Promise.all(stockUpdates)
+                    .then(() => {
+                        // Confirmar la transacción
+                        bd.commit((err) => {
+                            if (err) {
+                                return bd.rollback(() => {
+                                    res.status(500).json({ error: 'Error al confirmar la transacción' });
+                                });
+                            }
+                            res.status(201).json({ id: ventaId, message: 'Venta realizada con éxito' });
+                        });
+                    })
+                    .catch((err) => {
+                        bd.rollback(() => {
+                            res.status(500).json({ error: 'Error al actualizar el stock' });
+                        });
+                    });
+            });
+        });
     });
 });
 
@@ -295,9 +396,9 @@ app.get("/ventas/:id", (req, res) => {
 // Actualizar una venta por su ID
 app.put("/ventas/:id", (req, res) => {
     const { id } = req.params;
-    const { ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, Total } = req.body;
-    const query = "UPDATE Venta SET ProductoId = ?, ClienteId = ?, TipoComprobanteId = ?, TipoPagoId = ?, Cantidad = ?, Total = ? WHERE Id = ?";
-    bd.query(query, [ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, Total, id], (err, result) => {
+    const { ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, FechVenta, Total } = req.body;
+    const query = "UPDATE Venta SET ProductoId = ?, ClienteId = ?, TipoComprobanteId = ?, TipoPagoId = ?, Cantidad = ?, FechVenta =?, Total = ? WHERE Id = ?";
+    bd.query(query, [ProductoId, ClienteId, TipoComprobanteId, TipoPagoId, Cantidad, FechVenta, Total, id], (err, result) => {
         if (err) {
             console.error("Error actualizando venta:", err);
             res.status(500).json({ error: "Error actualizando venta" });

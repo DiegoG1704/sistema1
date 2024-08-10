@@ -4,21 +4,17 @@ import '../css/navar.css'; // Asegúrate de crear y definir estilos en Navbar.cs
 import 'primeicons/primeicons.css';
 import { TabView, TabPanel } from 'primereact/tabview';
 import Venta from '../Interfaz/venta';
+import AgregarVenta from '../Interfaz/prueba';
 
 export default function Maquinas() {
   return (
     <>
       <TabView>
-          <TabPanel header="Header I">
-            <Venta/>
+          <TabPanel header="Formulario Ventas">
+            <AgregarVenta/>
           </TabPanel>
           <TabPanel header="Header II">
-              <p className="m-0">
-                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, 
-                  eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo
-                  enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui 
-                  ratione voluptatem sequi nesciunt. Consectetur, adipisci velit, sed quia non numquam eius modi.
-              </p>
+            <Venta/>
           </TabPanel>
           <TabPanel header="Header III">
               <p className="m-0">

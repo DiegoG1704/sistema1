@@ -5,4 +5,25 @@
   }
 
 
+  .p-field label {
+    font-weight: bold;
+    margin-right: 1rem;
+  }
+  
+  .p-field {
+    display: flex;
+  }
+
+  .p-field input, .p-field .p-dropdown, .p-field .p-inputnumber {
+    flex: 1;
+  }
+
+  .p-field .p-dropdown {
+    width: 100%;
+  }
+
+  .p-field .p-inputnumber {
+    width: 100%;
+  }
+
   

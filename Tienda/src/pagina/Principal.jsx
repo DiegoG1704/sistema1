@@ -8,16 +8,22 @@ import { Calendar } from 'primereact/calendar';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import axios from 'axios';
-import PagVenta from '../Componentes/PagVenta';
 import { useNavigate } from 'react-router-dom';
 
 export default function Principal() {
   const [products, setProducts] = useState([]);
   const [addDialogVisible, setAddDialogVisible] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [first, setFirst] = useState(0); // Index of the first item in the current page
+  const [rows, setRows] = useState(6);   // Number of items per page
+   // Handle pagination changes
+   const onPageChange = (event) => {
+    setFirst(event.first);
+    setRows(event.rows);
+  };
   const [newProduct, setNewProduct] = useState({
     Nombre: '',
-    PrecioVenta: 0,
+    PrecioVenta: '',
     FechaProduccion: null,
     Stock: 0,
     EmpaquetadoId: null,
@@ -26,13 +32,19 @@ export default function Principal() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [empaquetados, setEmpaquetados] = useState([]);
   const [estados, setEstados] = useState([]);
-  const [ventaVisible, setVentaVisible] = useState(false); // Renombrado a ventaVisible
+  const [ventaVisible, setVentaVisible] = useState(false);
+  const [ventas, setVentas] = useState([]);
+  const [filteredVentas, setFilteredVentas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [tiposComprobante, setTiposComprobante] = useState([]);
+  const [tiposPago, setTiposPago] = useState([]);
+  const [histVisible, setHistVisible] = useState(false);
 
   useEffect(() => {
     fetchProducts();
     fetchEmpaquetados();
     fetchEstados();
-    fetchVenta ();
+    fetchVentas();
     fetchClientes();
     fetchTipoPagos();
     fetchTiposComprobante();
@@ -72,6 +84,42 @@ export default function Principal() {
       setProducts(response.data);
     } catch (error) {
       console.error('Error al obtener los productos:', error);
+    }
+  };
+
+  const fetchVentas = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/ventas');
+      setVentas(response.data);
+    } catch (error) {
+      console.error('Error al obtener las ventas:', error);
+    }
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/clientes');
+      setClientes(response.data);
+    } catch (error) {
+      console.error('Error al obtener clientes:', error);
+    }
+  };
+
+  const fetchTiposComprobante = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/tiposcomprobantes');
+      setTiposComprobante(response.data);
+    } catch (error) {
+      console.error('Error al obtener tipos de comprobante:', error);
+    }
+  };
+
+  const fetchTipoPagos = async () => {
+    try {
+      const response = await axios.get('http://localhost:8081/TipoPagos');
+      setTiposPago(response.data);
+    } catch (error) {
+      console.error('Error al obtener tipos de pago:', error);
     }
   };
 
@@ -166,66 +214,19 @@ export default function Principal() {
       <Button icon="pi pi-trash" className="p-button-rounded p-button-danger p-button-text" onClick={() => deleteProduct(rowData.Id)} />
     );
   };
+
   const navigate = useNavigate();
-  // const VentaButton = (rowData) => {
-  //   return (
-  //     <Button
-  //       icon="pi pi-send"
-  //       label="Vender"
-  //       className="p-button-rounded p-button-primary p-button-text"
-  //       onClick={() => navigate('/venta')}
-  //     />
-  //   );
-  // };
 
-  const [ventas, setVentas] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [clientes, setClientes] = useState([]);
-  const [tiposComprobante, setTiposComprobante] = useState([]);
-  const [tiposPago, setTiposPago] = useState([]);
-  const fetchClientes = async () => {
-    try {
-      const response = await axios.get('http://localhost:8081/clientes');
-      setClientes(response.data);
-    } catch (error) {
-      console.error('Error al obtener clientes:', error);
-    }
-  };
-
-  const fetchTiposComprobante = async () => {
-    try {
-      const response = await axios.get('http://localhost:8081/tiposcomprobantes');
-      setTiposComprobante(response.data);
-    } catch (error) {
-      console.error('Error al obtener tipos de comprobante:', error);
-    }
-  };
-
-  const fetchTipoPagos = async () => {
-    try {
-      const response = await axios.get('http://localhost:8081/TipoPagos');
-      setTiposPago(response.data);
-    } catch (error) {
-      console.error('Error al obtener tipos de pago:', error);
-    }
-  };
-  const fetchVenta = async () => {
-    try {
-      const response = await axios.get('http://localhost:8081/ventas');
-      setVentas(response.data);
-    } catch (error) {
-      console.error('Error al obtener las ventas:', error);
-    }
-  };
-
-  const [HistVisible,setHistVisible]=useState(false)
-    const Historial = (rowData) => {
+  const HistorialButton = (rowData) => {
     return (
       <Button
         icon="pi pi-send"
         label="Historial"
         className="p-button-rounded p-button-primary p-button-text"
-        onClick={() => setHistVisible(true)}
+        onClick={() => {
+          setFilteredVentas(ventas.filter(venta => venta.ProductoId === rowData.Id));
+          setHistVisible(true);
+        }}
       />
     );
   };
@@ -244,89 +245,90 @@ export default function Principal() {
           <Column field="FechaProduccion" header="Fecha de producción" body={(rowData) => new Date(rowData.FechaProduccion).toLocaleDateString()}></Column>
           <Column field="Stock" header="Stock"></Column>
           <Column field="EmpaquetadoId" header="Empaquetado" body={(rowData) => getEmpaquetadoNombreById(rowData.EmpaquetadoId)}></Column>
-          <Column field='EstadoId' header="Estado" body={(rowData) => getEstadoNombreById(rowData.EstadoId)}></Column>
-          <Column body={Historial} header="Vender"></Column>
+          <Column field="EstadoId" header="Estado" body={(rowData) => getEstadoNombreById(rowData.EstadoId)}></Column>
+          <Column body={HistorialButton} header="Historial"></Column>
           <Column header="Editar" body={EditarButton}></Column>
           <Column header="Eliminar" body={EliminarButton}></Column>
         </DataTable>
       </div>
-      <Dialog header='Historial del producto ' style={{ width: '50vw', maxWidth: '90vw' }} visible={HistVisible} onHide={() => setHistVisible(false)}>
-        <DataTable value={ventas} tableStyle={{ minWidth: '50rem' }}>
-          <Column field="ProductoId" header="Producto" body={rowData => products.find(producto => producto.Id === rowData.ProductoId)?.Nombre}></Column>
-          <Column field="ClienteId" header="Cliente" body={rowData => clientes.find(cliente => cliente.Id === rowData.ClienteId)?.Nombre}></Column>
-          <Column field="TipoComprobanteId" header="Tipo de Comprobante" body={rowData => tiposComprobante.find(tipo => tipo.Id === rowData.TipoComprobanteId)?.Nombre}></Column>
-          <Column field="TipoPagoId" header="Tipo de Pago" body={rowData => tiposPago.find(tipo => tipo.Id === rowData.TipoPagoId)?.Nombre}></Column>
+
+      <Dialog header="Agregar Producto" visible={addDialogVisible} style={{ width: '50vw' }} onHide={() => setAddDialogVisible(false)}>
+        <div className="p-fluid">
+          <div className="field">
+            <label htmlFor="Nombre">Nombre</label>
+            <InputText id="Nombre" value={newProduct.Nombre} onChange={(e) => setNewProduct({ ...newProduct, Nombre: e.target.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="PrecioVenta">Precio</label>
+            <InputNumber id="PrecioVenta" value={newProduct.PrecioVenta} onValueChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
+          </div>
+          <div className="field">
+            <label htmlFor="FechaProduccion">Fecha de Producción</label>
+            <Calendar id="FechaProduccion" value={newProduct.FechaProduccion} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} showIcon />
+          </div>
+          <div className="field">
+            <label htmlFor="Stock">Stock</label>
+            <InputNumber id="Stock" value={newProduct.Stock} onValueChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="EmpaquetadoId">Empaquetado</label>
+            <Dropdown id="EmpaquetadoId" value={newProduct.EmpaquetadoId} options={empaquetados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} placeholder="Seleccione un empaquetado" />
+          </div>
+          <div className="field">
+            <label htmlFor="EstadoId">Estado</label>
+            <Dropdown id="EstadoId" value={newProduct.EstadoId} options={estados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} placeholder="Seleccione un estado" />
+          </div>
+          <Button label="Guardar" icon="pi pi-check" className="p-button-raised p-button-success" onClick={addProduct} />
+        </div>
+      </Dialog>
+
+      <Dialog header="Editar Producto" visible={editDialogVisible} style={{ width: '50vw' }} onHide={() => setEditDialogVisible(false)}>
+        <div className="p-fluid">
+          <div className="field">
+            <label htmlFor="Nombre">Nombre</label>
+            <InputText id="Nombre" value={newProduct.Nombre} onChange={(e) => setNewProduct({ ...newProduct, Nombre: e.target.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="PrecioVenta">Precio</label>
+            <InputNumber id="PrecioVenta" value={newProduct.PrecioVenta} onValueChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
+          </div>
+          <div className="field">
+            <label htmlFor="FechaProduccion">Fecha de Producción</label>
+            <Calendar id="FechaProduccion" value={newProduct.FechaProduccion} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} showIcon />
+          </div>
+          <div className="field">
+            <label htmlFor="Stock">Stock</label>
+            <InputNumber id="Stock" value={newProduct.Stock} onValueChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="EmpaquetadoId">Empaquetado</label>
+            <Dropdown id="EmpaquetadoId" value={newProduct.EmpaquetadoId} options={empaquetados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} placeholder="Seleccione un empaquetado" />
+          </div>
+          <div className="field">
+            <label htmlFor="EstadoId">Estado</label>
+            <Dropdown id="EstadoId" value={newProduct.EstadoId} options={estados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} placeholder="Seleccione un estado" />
+          </div>
+          <Button label="Guardar" icon="pi pi-check" className="p-button-raised p-button-success" onClick={editProduct} />
+        </div>
+      </Dialog>
+
+      <Dialog header="Historial de Ventas" visible={histVisible} style={{ width: '70vw' }} onHide={() => setHistVisible(false)}>
+        <DataTable 
+          value={filteredVentas} 
+          paginator
+          rows={rows}
+          first={first}
+          onPage={onPageChange}
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} elementos"
+          tableStyle={{ minWidth: '50rem' }}
+        >
+          <Column field="ClienteId" header="Cliente" body={(rowData) => clientes.find(cliente => cliente.Id === rowData.ClienteId)?.Nombre}></Column>
+          <Column field="TipoComprobanteId" header="Tipo de Comprobante" body={(rowData) => tiposComprobante.find(tipo => tipo.Id === rowData.TipoComprobanteId)?.Nombre}></Column>
+          <Column field="TipoPagoId" header="Tipo de Pago" body={(rowData) => tiposPago.find(tipo => tipo.Id === rowData.TipoPagoId)?.Nombre}></Column>
+          <Column field="Precio" header="Precio" body={(rowData) => products.find(tipo => tipo.Id === rowData.Precio)?.PrecioVenta}></Column>
           <Column field="Cantidad" header="Cantidad"></Column>
-          <Column field="Total" header="Total"></Column>
+          <Column field="Fecha" header="Fecha" body={(rowData) => new Date(rowData.FechVenta).toLocaleDateString()}></Column>
         </DataTable>
-      </Dialog>
-
-      {/* Add Product Dialog */}
-      <Dialog header="Agregar Producto" visible={addDialogVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setAddDialogVisible(false)}>
-        <div className="p-fluid flex" style={{ width: '100%' }}>
-          <div className="p-field">
-            <label htmlFor="nombre">Nombre</label>
-            <InputText id="nombre" value={newProduct.Nombre} onChange={(e) => setNewProduct({ ...newProduct, Nombre: e.target.value })} />
-          </div>
-          <div className="p-field">
-            <label htmlFor="precio">Precio</label>
-            <InputNumber id="precio" value={newProduct.PrecioVenta} onChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
-          </div>
-          <div className="p-field">
-            <label htmlFor="fecha">Fecha de Producción</label>
-            <Calendar id="fecha" value={newProduct.FechaProduccion} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} dateFormat="yy-mm-dd" />
-          </div>
-          <div className="p-field">
-            <label htmlFor="stock">Stock</label>
-            <InputNumber id="stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
-          </div>
-          <div className="p-field">
-            <label htmlFor="empaquetado">Empaquetado</label>
-            <Dropdown id="empaquetado" value={newProduct.EmpaquetadoId} options={empaquetados} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
-          </div>
-          <div className="p-field">
-            <label htmlFor="estado">Estado</label>
-            <Dropdown id="estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
-          </div>
-        </div>
-        <div className="p-dialog-footer">
-          <Button label="Cancelar" className="p-button-text" onClick={() => setAddDialogVisible(false)} />
-          <Button label="Agregar" className="p-button-success" onClick={addProduct} />
-        </div>
-      </Dialog>
-
-      {/* Edit Product Dialog */}
-      <Dialog header="Editar Producto" visible={editDialogVisible} style={{ width: '50vw', maxWidth: '90vw' }} onHide={() => setEditDialogVisible(false)}>
-        <div className="p-fluid flex" style={{ width: '100%' }}>
-          <div className="p-field">
-            <label htmlFor="edit-nombre">Nombre</label>
-            <InputText id="edit-nombre" value={newProduct.Nombre} onChange={(e) => setNewProduct({ ...newProduct, Nombre: e.target.value })} />
-          </div>
-          <div className="p-field">
-            <label htmlFor="edit-precio">Precio</label>
-            <InputNumber id="edit-precio" value={newProduct.PrecioVenta} onChange={(e) => setNewProduct({ ...newProduct, PrecioVenta: e.value })} mode="currency" currency="USD" locale="en-US" />
-          </div>
-          <div className="p-field">
-            <label htmlFor="edit-fecha">Fecha de Producción</label>
-            <Calendar id="edit-fecha" value={newProduct.FechaProduccion} onChange={(e) => setNewProduct({ ...newProduct, FechaProduccion: e.value })} dateFormat="yy-mm-dd" />
-          </div>
-          <div className="p-field">
-            <label htmlFor="edit-stock">Stock</label>
-            <InputNumber id="edit-stock" value={newProduct.Stock} onChange={(e) => setNewProduct({ ...newProduct, Stock: e.value })} />
-          </div>
-          <div className="p-field">
-            <label htmlFor="edit-empaquetado">Empaquetado</label>
-            <Dropdown id="edit-empaquetado" value={newProduct.EmpaquetadoId} options={empaquetados} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
-          </div>
-          <div className="p-field">
-            <label htmlFor="edit-estado">Estado</label>
-            <Dropdown id="edit-estado" value={newProduct.EstadoId} options={estados} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} optionLabel="Nombre" optionValue="Id" />
-          </div>
-        </div>
-        <div className="p-dialog-footer">
-          <Button label="Cancelar" className="p-button-text" onClick={() => setEditDialogVisible(false)} />
-          <Button label="Guardar" className="p-button-warning" onClick={editProduct} />
-        </div>
       </Dialog>
     </>
   );
