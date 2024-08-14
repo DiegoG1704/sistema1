@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 10-08-2024 a las 08:33:06
+-- Tiempo de generación: 14-08-2024 a las 02:09:58
 -- Versión del servidor: 10.4.28-MariaDB
 -- Versión de PHP: 8.0.28
 
@@ -185,8 +185,8 @@ CREATE TABLE `producto` (
 --
 
 INSERT INTO `producto` (`Id`, `Nombre`, `PrecioVenta`, `FechaProduccion`, `Stock`, `EmpaquetadoId`, `EstadoId`) VALUES
-(1, 'tomacorriente', 12.00, '2024-08-03', 16, 1, 1),
-(2, 'enchufe', 10.00, '2024-08-04', 14, 1, 1);
+(1, 'tomacorriente', 12.00, '2024-08-03', 9, 1, 1),
+(2, 'enchufe', 10.00, '2024-08-04', 7, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -300,7 +300,6 @@ CREATE TABLE `unidadmedida` (
 
 CREATE TABLE `venta` (
   `Id` int(11) NOT NULL,
-  `ProductoId` int(11) DEFAULT NULL,
   `ClienteId` int(11) DEFAULT NULL,
   `TipoComprobanteId` int(11) DEFAULT NULL,
   `TipoPagoId` int(11) DEFAULT NULL,
@@ -312,20 +311,11 @@ CREATE TABLE `venta` (
 -- Volcado de datos para la tabla `venta`
 --
 
-INSERT INTO `venta` (`Id`, `ProductoId`, `ClienteId`, `TipoComprobanteId`, `TipoPagoId`, `Total`, `Fecha`) VALUES
-(1, NULL, 1, 1, 1, 122.00, '2024-08-13'),
-(2, NULL, 1, 1, 1, 156.00, '2024-08-10'),
-(3, NULL, 2, 2, 1, 52.00, '2024-08-10'),
-(4, NULL, 1, 1, 2, 92.00, '2024-08-10'),
-(5, NULL, 1, 1, 2, 186.00, '2024-08-10'),
-(6, NULL, 2, 2, 1, 132.00, '2024-08-10'),
-(7, NULL, 2, 1, 1, 144.00, '2024-08-10'),
-(8, NULL, 1, 2, 1, 84.00, '2024-08-10'),
-(9, NULL, 2, 1, 1, 50.00, '2024-08-10'),
-(10, NULL, 2, 1, 1, 66.00, '2024-08-10'),
-(11, NULL, 4, 1, 1, 112.00, '2024-08-10'),
-(12, NULL, 2, 1, 1, 36.00, '2024-08-10'),
-(13, NULL, 2, 1, 2, 22.00, '2024-08-10');
+INSERT INTO `venta` (`Id`, `ClienteId`, `TipoComprobanteId`, `TipoPagoId`, `Total`, `Fecha`) VALUES
+(15, 1, 1, 2, 34.00, '2024-08-11'),
+(16, 4, 1, 2, 22.00, '2024-08-11'),
+(17, 3, 1, 2, 22.00, '2024-08-11'),
+(18, 3, 1, 1, 22.00, '2024-08-11');
 
 -- --------------------------------------------------------
 
@@ -346,27 +336,14 @@ CREATE TABLE `ventaproducto` (
 --
 
 INSERT INTO `ventaproducto` (`Id`, `VentaId`, `ProductoId`, `Cantidad`, `Precio`) VALUES
-(1, 1, 1, 10, 12.00),
-(2, 1, 2, 5, 34.00),
-(3, 2, NULL, 8, 12.00),
-(4, 2, NULL, 6, 10.00),
-(5, 3, NULL, 4, 10.00),
-(6, 3, NULL, 1, 12.00),
-(7, 4, 1, 1, 12.00),
-(8, 4, 2, 8, 10.00),
-(9, 5, 1, 8, 12.00),
-(10, 5, 2, 9, 10.00),
-(11, 6, 1, 11, 12.00),
-(12, 7, 1, 12, 12.00),
-(13, 8, 1, 7, 12.00),
-(14, 9, 2, 5, 10.00),
-(15, 10, 1, 3, 12.00),
-(16, 10, 2, 3, 10.00),
-(17, 11, 1, 1, 12.00),
-(18, 11, 2, 10, 10.00),
-(19, 12, 1, 3, 12.00),
-(20, 13, 1, 1, 12.00),
-(21, 13, 2, 1, 10.00);
+(1, 15, 1, 2, 12.00),
+(2, 15, 2, 1, 10.00),
+(3, 16, 1, 1, 12.00),
+(4, 16, 2, 1, 10.00),
+(5, 17, 1, 1, 12.00),
+(6, 17, 2, 1, 10.00),
+(7, 18, 1, 1, 12.00),
+(8, 18, 2, 1, 10.00);
 
 --
 -- Índices para tablas volcadas
@@ -492,7 +469,6 @@ ALTER TABLE `unidadmedida`
 --
 ALTER TABLE `venta`
   ADD PRIMARY KEY (`Id`),
-  ADD KEY `ProductoId` (`ProductoId`),
   ADD KEY `ClienteId` (`ClienteId`),
   ADD KEY `TipoComprobanteId` (`TipoComprobanteId`),
   ADD KEY `TipoPagoId` (`TipoPagoId`);
@@ -615,13 +591,13 @@ ALTER TABLE `unidadmedida`
 -- AUTO_INCREMENT de la tabla `venta`
 --
 ALTER TABLE `venta`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT de la tabla `ventaproducto`
 --
 ALTER TABLE `ventaproducto`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Restricciones para tablas volcadas
@@ -684,7 +660,6 @@ ALTER TABLE `trabajador`
 -- Filtros para la tabla `venta`
 --
 ALTER TABLE `venta`
-  ADD CONSTRAINT `venta_ibfk_1` FOREIGN KEY (`ProductoId`) REFERENCES `producto` (`Id`),
   ADD CONSTRAINT `venta_ibfk_2` FOREIGN KEY (`ClienteId`) REFERENCES `cliente` (`Id`),
   ADD CONSTRAINT `venta_ibfk_3` FOREIGN KEY (`TipoComprobanteId`) REFERENCES `tipocomprobante` (`Id`),
   ADD CONSTRAINT `venta_ibfk_4` FOREIGN KEY (`TipoPagoId`) REFERENCES `tipopago` (`Id`);
