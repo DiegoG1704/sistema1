@@ -5,6 +5,7 @@ import 'primeicons/primeicons.css';
 import { TabView, TabPanel } from 'primereact/tabview';
 import Venta from '../Interfaz/venta';
 import AgregarVenta from '../Interfaz/prueba';
+import Login from '../Login/login';
 
 export default function Maquinas() {
   return (
@@ -14,7 +15,7 @@ export default function Maquinas() {
             <AgregarVenta/>
           </TabPanel>
           <TabPanel header="Header II">
-            <Venta/>
+            <Login/>
           </TabPanel>
           <TabPanel header="Header III">
               <p className="m-0">

@@ -50,10 +50,16 @@ app.get("/productos/:id", (req, res) => {
 
 // Crear un nuevo producto
 app.post("/productos", (req, res) => {
-    const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId } = req.body;
+    const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId } = req.body;
+    
+    // Asegúrate de que todos los campos esperados están presentes
+    if (!Nombre || PrecioVenta == null || !FechaProduccion || Stock == null || EmpaquetadoId == null) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
+    }
+
     bd.query(
-        "INSERT INTO producto (Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId) VALUES (?, ?, ?, ?, ?, ?)",
-        [Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId],
+        "INSERT INTO Producto (Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId) VALUES (?, ?, ?, ?, ?)",
+        [Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId],
         (err, results) => {
             if (err) {
                 console.error("Error creando producto:", err);
@@ -65,14 +71,15 @@ app.post("/productos", (req, res) => {
     );
 });
 
+
 // Actualizar un producto por ID
 app.put('/productos/:id', (req, res) => {
     const id = req.params.id;
-    const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId } = req.body;
+    const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId} = req.body;
   
-    const query = `UPDATE producto SET Nombre = ?, PrecioVenta = ?, FechaProduccion = ?, Stock = ?, EmpaquetadoId = ?, EstadoId = ? WHERE Id = ?`;
+    const query = `UPDATE producto SET Nombre = ?, PrecioVenta = ?, FechaProduccion = ?, Stock = ?, EmpaquetadoId = ? WHERE Id = ?`;
   
-    bd.query(query, [Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, EstadoId, id], (err, results) => {
+    bd.query(query, [Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, id], (err, results) => {
       if (err) {
         console.error('Error actualizando producto:', err);
         res.status(500).send('Error actualizando producto');
@@ -84,34 +91,26 @@ app.put('/productos/:id', (req, res) => {
     });
 });
 
-
 // Eliminar un producto por ID
-app.delete("/productos/:id", (req, res) => {
-    const {id} = req.params;
-
-    const sql = "DELETE FROM producto WHERE Id = ?";
-    bd.query(sql, [id], (err, result) => {
+app.delete('/productos/:id', (req, res) => {
+    const { id } = req.params;
+    bd.query('DELETE FROM ventaproducto WHERE ProductoId = ?', [id], (err) => {
         if (err) {
-            console.error(err);
-            return res.status(500).json({ error: "Error interno del servidor" });
+            console.error('Error deleting related records:', err);
+            return res.status(500).json({ error: 'Error deleting related records' });
         }
-
-        // Verificar si se eliminó correctamente
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "trabajador no encontrado" });
-        }
-
-        // Obtener los destinos actualizados después de la eliminación
-        bd.query("SELECT * FROM producto", (err, rows) => {
+        bd.query('DELETE FROM producto WHERE Id = ?', [id], (err, results) => {
             if (err) {
-                console.error(err);
-                return res.status(500).json({ error: "Error interno del servidor" });
+                console.error('Error deleting product:', err);
+                return res.status(500).json({ error: 'Error deleting product' });
             }
-            res.json(rows);
+            if (results.affectedRows === 0) {
+                return res.status(404).json({ error: 'Producto no encontrado' });
+            }
+            res.status(200).json({ message: 'Producto eliminado correctamente' });
         });
     });
 });
-
 
 // Ruta para obtener todos los registros de la tabla Empaquetado
 app.get("/empaquetados", (req, res) => {

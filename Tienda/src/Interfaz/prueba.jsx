@@ -28,7 +28,12 @@ const AgregarVenta = () => {
     const toast = useRef(null);
 
     useEffect(() => {
-        axios.get('http://localhost:8081/productos').then(response => setProductos(response.data));
+        axios.get('http://localhost:8081/productos')
+        .then(response => {
+            // Filtrar productos con stock mayor a 0
+            const productosConStock = response.data.filter(producto => producto.Stock > 0);
+            setProductos(productosConStock);
+        });
         axios.get('http://localhost:8081/clientes').then(response => setClientes(response.data));
         axios.get('http://localhost:8081/tiposcomprobantes').then(response => setTiposComprobante(response.data));
         axios.get('http://localhost:8081/TipoPagos').then(response => setTiposPago(response.data));
@@ -207,6 +212,7 @@ const AgregarVenta = () => {
                         placeholder="Seleccione Producto"
                         style={{ width: '100%' }}
                     />
+
                 </div>
                 {selectedProducto && (
                     <p>El producto tiene un stock de: {selectedProducto.Stock}</p>

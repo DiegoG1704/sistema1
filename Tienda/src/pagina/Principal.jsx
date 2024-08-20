@@ -8,7 +8,7 @@ import { Calendar } from 'primereact/calendar';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Tag } from 'primereact/tag';
 
 export default function Principal() {
   const [products, setProducts] = useState([]);
@@ -39,6 +39,7 @@ export default function Principal() {
   const [tiposComprobante, setTiposComprobante] = useState([]);
   const [tiposPago, setTiposPago] = useState([]);
   const [histVisible, setHistVisible] = useState(false);
+  const [DeleteDialog,setDeleteDialog] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -123,67 +124,78 @@ export default function Principal() {
     }
   };
 
+  const getProductState = (stock) => {
+    return stock > 0 ? 'Disponible' : 'No Disponible';
+  };
+
   const addProduct = async () => {
-    try {
-      const formattedProduct = {
-        Nombre: newProduct.Nombre,
-        PrecioVenta: newProduct.PrecioVenta,
-        FechaProduccion: newProduct.FechaProduccion,
-        Stock: newProduct.Stock,
-        EmpaquetadoId: newProduct.EmpaquetadoId,
-        EstadoId: newProduct.EstadoId
-      };
+  try {
+    const formattedProduct = {
+      Nombre: newProduct.Nombre,
+      PrecioVenta: newProduct.PrecioVenta,
+      FechaProduccion: newProduct.FechaProduccion,
+      Stock: newProduct.Stock,
+      EmpaquetadoId: newProduct.EmpaquetadoId,
+      EstadoId: newProduct.EstadoId,
+      Estado: getProductState(newProduct.Stock) // Agrega el estado
+    };
 
-      const response = await axios.post('http://localhost:8081/productos', formattedProduct);
-      setProducts([...products, response.data]);
-      setAddDialogVisible(false);
-      setNewProduct({
-        Nombre: '',
-        PrecioVenta: 0,
-        FechaProduccion: null,
-        Stock: 0,
-        EmpaquetadoId: null,
-        EstadoId: null
-      });
-    } catch (error) {
-      console.error('Error al agregar producto:', error);
-    }
-  };
+    const response = await axios.post('http://localhost:8081/productos', formattedProduct);
+    setProducts([...products, response.data]);
+    setAddDialogVisible(false);
+    setNewProduct({
+      Nombre: '',
+      PrecioVenta: 0,
+      FechaProduccion: null,
+      Stock: 0,
+      EmpaquetadoId: null,
+      EstadoId: null
+    });
+  } catch (error) {
+    console.error('Error al agregar producto:', error);
+  }
+};
 
-  const editProduct = async () => {
-    try {
-      if (!selectedProduct) {
-        console.error('No product selected for editing.');
-        return;
-      }
-  
-      const formattedProduct = {
-        Nombre: newProduct.Nombre,
-        PrecioVenta: newProduct.PrecioVenta,
-        FechaProduccion: newProduct.FechaProduccion,
-        Stock: newProduct.Stock,
-        EmpaquetadoId: newProduct.EmpaquetadoId,
-        EstadoId: newProduct.EstadoId
-      };
-  
-      const response = await axios.put(`http://localhost:8081/productos/${selectedProduct.Id}`, formattedProduct);
-      setProducts(products.map(p => (p.Id === selectedProduct.Id ? { ...selectedProduct, ...formattedProduct } : p)));
-      setEditDialogVisible(false);
-      setSelectedProduct(null);
-      setNewProduct({
-        Nombre: '',
-        PrecioVenta: 0,
-        FechaProduccion: null,
-        Stock: 0,
-        EmpaquetadoId: null,
-        EstadoId: null
-      });
-    } catch (error) {
-      console.error('Error al actualizar producto:', error);
+const editProduct = async () => {
+  try {
+    if (!selectedProduct) {
+      console.error('No product selected for editing.');
+      return;
     }
-  };
+
+    const formattedProduct = {
+      Nombre: newProduct.Nombre,
+      PrecioVenta: newProduct.PrecioVenta,
+      FechaProduccion: newProduct.FechaProduccion,
+      Stock: newProduct.Stock,
+      EmpaquetadoId: newProduct.EmpaquetadoId,
+      EstadoId: newProduct.EstadoId,
+      Estado: getProductState(newProduct.Stock) // Agrega el estado
+    };
+
+    const response = await axios.put(`http://localhost:8081/productos/${selectedProduct.Id}`, formattedProduct);
+    setProducts(products.map(p => (p.Id === selectedProduct.Id ? { ...selectedProduct, ...formattedProduct } : p)));
+    setEditDialogVisible(false);
+    setSelectedProduct(null);
+    setNewProduct({
+      Nombre: '',
+      PrecioVenta: 0,
+      FechaProduccion: null,
+      Stock: 0,
+      EmpaquetadoId: null,
+      EstadoId: null
+    });
+  } catch (error) {
+    console.error('Error al actualizar producto:', error);
+  }
+};
 
   const deleteProduct = async (productId) => {
+    console.log('Deleting product with ID:', productId); // Debugging line
+    if (!productId) {
+      console.error('Product ID is not provided.');
+      return;
+    }
     try {
       await axios.delete(`http://localhost:8081/productos/${productId}`);
       const updatedProducts = products.filter(product => product.Id !== productId);
@@ -194,7 +206,11 @@ export default function Principal() {
       alert("Error al eliminar el producto");
     }
   };
-
+  
+  useEffect(() => {
+    console.log('Products:', products); // Debugging line
+  }, [products]);
+  
   const EditarButton = (rowData) => {
     return (
       <Button
@@ -215,21 +231,22 @@ export default function Principal() {
     );
   };
 
-  const navigate = useNavigate();
-
-  const HistorialButton = (rowData) => {
-    return (
-      <Button
-        icon="pi pi-send"
-        label="Historial"
-        className="p-button-rounded p-button-primary p-button-text"
-        onClick={() => {
-          setFilteredVentas(ventas.filter(venta => venta.ProductoId === rowData.Id));
-          setHistVisible(true);
-        }}
-      />
-    );
+  const statusBodyTemplate = (product) => {
+    return <Tag style={{textAlign:'center'}} value={getProductState(product.Stock)} severity={getSeverity(product)}></Tag>;
   };
+  
+  const getSeverity = (product) => {
+    switch (getProductState(product.Stock)) {
+      case 'Disponible':
+        return 'success';
+      case 'No Disponible':
+        return 'danger';
+      default:
+        return null;
+    }
+  };
+  
+
 
   return (
     <>
@@ -245,10 +262,9 @@ export default function Principal() {
           <Column field="FechaProduccion" header="Fecha de producción" body={(rowData) => new Date(rowData.FechaProduccion).toLocaleDateString()}></Column>
           <Column field="Stock" header="Stock"></Column>
           <Column field="EmpaquetadoId" header="Empaquetado" body={(rowData) => getEmpaquetadoNombreById(rowData.EmpaquetadoId)}></Column>
-          <Column field="EstadoId" header="Estado" body={(rowData) => getEstadoNombreById(rowData.EstadoId)}></Column>
-          <Column body={HistorialButton} header="Historial"></Column>
           <Column header="Editar" body={EditarButton}></Column>
           <Column header="Eliminar" body={EliminarButton}></Column>
+          <Column header="Status" body={statusBodyTemplate}></Column>
         </DataTable>
       </div>
 
@@ -273,10 +289,6 @@ export default function Principal() {
           <div className="field">
             <label htmlFor="EmpaquetadoId">Empaquetado</label>
             <Dropdown id="EmpaquetadoId" value={newProduct.EmpaquetadoId} options={empaquetados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} placeholder="Seleccione un empaquetado" />
-          </div>
-          <div className="field">
-            <label htmlFor="EstadoId">Estado</label>
-            <Dropdown id="EstadoId" value={newProduct.EstadoId} options={estados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} placeholder="Seleccione un estado" />
           </div>
           <Button label="Guardar" icon="pi pi-check" className="p-button-raised p-button-success" onClick={addProduct} />
         </div>
@@ -304,31 +316,8 @@ export default function Principal() {
             <label htmlFor="EmpaquetadoId">Empaquetado</label>
             <Dropdown id="EmpaquetadoId" value={newProduct.EmpaquetadoId} options={empaquetados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EmpaquetadoId: e.value })} placeholder="Seleccione un empaquetado" />
           </div>
-          <div className="field">
-            <label htmlFor="EstadoId">Estado</label>
-            <Dropdown id="EstadoId" value={newProduct.EstadoId} options={estados.map(item => ({ label: item.Nombre, value: item.Id }))} onChange={(e) => setNewProduct({ ...newProduct, EstadoId: e.value })} placeholder="Seleccione un estado" />
-          </div>
           <Button label="Guardar" icon="pi pi-check" className="p-button-raised p-button-success" onClick={editProduct} />
         </div>
-      </Dialog>
-
-      <Dialog header="Historial de Ventas" visible={histVisible} style={{ width: '70vw' }} onHide={() => setHistVisible(false)}>
-        <DataTable 
-          value={filteredVentas} 
-          paginator
-          rows={rows}
-          first={first}
-          onPage={onPageChange}
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} elementos"
-          tableStyle={{ minWidth: '50rem' }}
-        >
-          <Column field="ClienteId" header="Cliente" body={(rowData) => clientes.find(cliente => cliente.Id === rowData.ClienteId)?.Nombre}></Column>
-          <Column field="TipoComprobanteId" header="Tipo de Comprobante" body={(rowData) => tiposComprobante.find(tipo => tipo.Id === rowData.TipoComprobanteId)?.Nombre}></Column>
-          <Column field="TipoPagoId" header="Tipo de Pago" body={(rowData) => tiposPago.find(tipo => tipo.Id === rowData.TipoPagoId)?.Nombre}></Column>
-          <Column field="Precio" header="Precio" body={(rowData) => products.find(tipo => tipo.Id === rowData.Precio)?.PrecioVenta}></Column>
-          <Column field="Cantidad" header="Cantidad"></Column>
-          <Column field="Fecha" header="Fecha" body={(rowData) => new Date(rowData.FechVenta).toLocaleDateString()}></Column>
-        </DataTable>
       </Dialog>
     </>
   );

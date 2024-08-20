@@ -5,23 +5,28 @@ import axios from 'axios';
 import { TabView, TabPanel } from 'primereact/tabview';
 import VGeneral from '../Historial/VGeneral';
 import VProductos from '../Historial/VProductos';
+import VClientes from '../Historial/VClientes';
+import VVentas from '../Historial/VVentas';
 
 export default function Tecnologia() {
   return (
     <>
       <h1>Historial de ventas</h1>
       <div className="flex-container" style={{ marginBottom: '20px' }}>
-        <span>Aquí se visualizarán la lista de los Materiales necesarios</span>
+        <span>Aquí se visualizarán la lista de Venta de Productos</span>
       </div>
       <TabView>
           <TabPanel header="Vista General">
             <VGeneral/>
           </TabPanel>
-          <TabPanel header="Header II">
+          <TabPanel header="Vista Productos">
             <VProductos/>
           </TabPanel>
-          <TabPanel header="Header III">
-            <h1>I3</h1>
+          <TabPanel header="Vista Clientes">
+            <VClientes/>
+          </TabPanel>
+          <TabPanel header="Vista Ventas">
+            <VVentas/>
           </TabPanel>
       </TabView>
     </>

@@ -6,15 +6,15 @@ import axios from 'axios';
 import { Dialog } from 'primereact/dialog';
 import { ProgressBar } from 'primereact/progressbar';
 
-export default function VProductos() {
+export default function VClientes() {
   const [products, setProducts] = useState([]);
   const [ventas, setVentas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [tiposPago, setTiposPago] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null); // Estado para el producto seleccionado
-  const [filteredVentas, setFilteredVentas] = useState([]); // Estado para el historial de ventas filtrado
-  const [first, setFirst] = useState(0); // Index of the first item in the current page
-  const [rows, setRows] = useState(6);   // Number of items per page
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [filteredVentas, setFilteredVentas] = useState([]);
+  const [first, setFirst] = useState(0);
+  const [rows, setRows] = useState(6);
   const [histVisible, setHistVisible] = useState(false);
   const [HVentas, setHVentas] = useState([]);
 
@@ -27,11 +27,14 @@ export default function VProductos() {
   }, []);
 
   useEffect(() => {
-    if (selectedProduct) {
-      const filtered = ventas.filter(venta => venta.ProductoId === selectedProduct.Id);
+    if (selectedCliente) {
+      const filtered = ventas.filter(venta => {
+        const HVenta = HVentas.find(p => p.Id === venta.VentaId);
+        return HVenta?.ClienteId === selectedCliente.Id;
+      });
       setFilteredVentas(filtered);
     }
-  }, [selectedProduct, ventas]);
+  }, [selectedCliente, ventas, HVentas]);
 
   const fetchVentas = async () => {
     try {
@@ -98,6 +101,7 @@ export default function VProductos() {
     const cliente = clientes.find(c => c.Id === clienteId);
     return cliente ? `${cliente.Nombre} ${cliente.Apellido}` : 'Desconocido';
   };
+
   const getClienteByVentaId = (ventaId) => {
     const HVenta = HVentas.find(p => p.Id === ventaId);
     return HVenta ? getClienteNameById(HVenta.ClienteId) : 'Desconocido';
@@ -125,41 +129,30 @@ export default function VProductos() {
         label="Historial"
         className="p-button-rounded p-button-primary p-button-text"
         onClick={() => {
-          setSelectedProduct(rowData);
+          setSelectedCliente(rowData);
           setHistVisible(true);
         }}
       />
     );
   };
 
-  const calculateProgress = (product) => {
-    const stock = product.Stock;
-    const stockInicial = product.StockInicial || 100; // Asumiendo un valor predeterminado si no se proporciona
-    const percentage = ((stockInicial - stock) / stockInicial) * 100;
-
-    return percentage;
+  const calcularFrecuenciaCompra = (clienteId) => {
+    return ventas.filter(venta => {
+      const HVenta = HVentas.find(p => p.Id === venta.VentaId);
+      return HVenta?.ClienteId === clienteId;
+    }).length;
   };
 
-  const ProgresoTemplate = (rowData) => {
-    const percentage = calculateProgress(rowData);
-
-    if (rowData.Stock === 0) {
-      return (
-        <div>
-          <ProgressBar value={100} style={{ height: '20px' }} />
-          <div>Producto terminado</div>
-        </div>
-      );
-    } else {
-      return <ProgressBar value={percentage} style={{ height: '20px' }} />;
-    }
+  const FrecuenciaCompra = (rowData) => {
+    const frecuencia = calcularFrecuenciaCompra(rowData.Id);
+    return <ProgressBar value={frecuencia * 5} />;
   };
 
   return (
     <>
       <div className="card">
         <DataTable
-          value={products}
+          value={clientes}
           paginator
           rows={rows}
           first={first}
@@ -167,11 +160,11 @@ export default function VProductos() {
           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} elementos"
           tableStyle={{ minWidth: '50rem' }}
         >
+          <Column field="DNI" header="DNI"/>
           <Column field="Nombre" header="Nombre"/>
-          <Column field="PrecioVenta" header="Precio" />
-          <Column field="Stock" header="Stock"></Column>
+          <Column field="Apellido" header="Apellido" />
           <Column header="Historial" body={HistorialButton}/>
-          <Column header="Progreso" body={ProgresoTemplate} />
+          <Column header="Frecuencia de Compra" body={FrecuenciaCompra} />
         </DataTable>
       </div>
       <Dialog header="Historial de Ventas" visible={histVisible} style={{ width: '70vw' }} onHide={() => setHistVisible(false)}>
