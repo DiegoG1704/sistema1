@@ -9,11 +9,9 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import axios from 'axios';
 import { Tag } from 'primereact/tag';
-import { useAuth } from '../Context/AuthContext'; // Asegúrate de tener un contexto de autenticación
 
 
 function Productos({ userId }) {
-  const { user } = useAuth(); // Obtén el ID del usuario logueado desde el contexto de autenticación
   const [products, setProducts] = useState([]);
   const [addDialogVisible, setAddDialogVisible] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
@@ -24,6 +22,7 @@ function Productos({ userId }) {
     setFirst(event.first);
     setRows(event.rows);
   };
+  
   const [newProduct, setNewProduct] = useState({
     Nombre: '',
     PrecioVenta: '',
@@ -41,7 +40,6 @@ function Productos({ userId }) {
   const [tiposPago, setTiposPago] = useState([]);
 
   useEffect(() => {
-    fetchProducts();
     fetchEmpaquetados();
     fetchEstados();
     fetchVentas();
@@ -74,14 +72,21 @@ function Productos({ userId }) {
     }
   };
 
-  const fetchProducts = async () => {
-    try {
-        const response = await axios.get(`http://localhost:3000/usuario/${userId}/productos`);
-        setProducts(response.data);
-    } catch (error) {
-        console.error('Error al obtener los productos:', error);
+  useEffect(() => {
+    const fetchProductos = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8081/usuario/${userId}/productos`);
+            setProducts(response.data);
+            // Asegúrate de que `setProducts` está actualizando el estado correctamente
+        } catch (error) {
+            console.error('Error fetching productos:', error);
+        }
+    };
+
+    if (userId) {
+        fetchProductos();
     }
-};
+}, [userId]);
 
   const fetchVentas = async () => {
     try {
@@ -123,16 +128,39 @@ function Productos({ userId }) {
     return stock > 0 ? 'Disponible' : 'No Disponible';
   };
 
+  // Guardar productos en localStorage
+    useEffect(() => {
+        localStorage.setItem('products', JSON.stringify(products));
+    }, [products]);
+    
+    // Recuperar productos de localStorage
+    useEffect(() => {
+        const storedProducts = JSON.parse(localStorage.getItem('products'));
+        if (storedProducts) {
+        setProducts(storedProducts);
+        }
+    }, []);
+  
+
   const addProduct = async () => {
     try {
       const formattedProduct = {
         ...newProduct,
         Estado: getProductState(newProduct.Stock),
-        UsuarioId: user.id // Incluye el ID del usuario al crear el producto
+        UsuarioId: userId
       };
-
+  
       const response = await axios.post('http://localhost:8081/productos', formattedProduct);
-      setProducts([...products, response.data]);
+      console.log('API Response:', response.data);
+  
+      // Check if products is an array before updating state
+      if (Array.isArray(products)) {
+        setProducts([...products, response.data]);
+      } else {
+        console.error('Products state is not an array:', products);
+        setProducts([response.data]); // Fallback to an array with the new product
+      }
+  
       setAddDialogVisible(false);
       setNewProduct({
         Nombre: '',
@@ -146,6 +174,9 @@ function Productos({ userId }) {
       console.error('Error al agregar producto:', error);
     }
   };
+  
+  
+  
 
 const editProduct = async () => {
   try {

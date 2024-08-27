@@ -8,7 +8,7 @@ import VProductos from '../Historial/VProductos';
 import VClientes from '../Historial/VClientes';
 import VVentas from '../Historial/VVentas';
 
-export default function Tecnologia() {
+export default function Tecnologia(userId) {
   return (
     <>
       <h1>Historial de ventas</h1>
@@ -17,7 +17,7 @@ export default function Tecnologia() {
       </div>
       <TabView>
           <TabPanel header="Vista General">
-            <VGeneral/>
+            <VGeneral userId={userId}/>
           </TabPanel>
           <TabPanel header="Vista Productos">
             <VProductos/>

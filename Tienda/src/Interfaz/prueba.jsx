@@ -9,10 +9,9 @@ import { Divider } from 'primereact/divider';
 import { Toast } from 'primereact/toast';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Toolbar } from 'primereact/toolbar';
 import GenerarPDF from '../PDF/PDFventa';
 
-const AgregarVenta = () => {
+const AgregarVenta = ({userId}) => {
     const [productos, setProductos] = useState([]);
     const [clientes, setClientes] = useState([]);
     const [tiposComprobante, setTiposComprobante] = useState([]);
@@ -38,6 +37,22 @@ const AgregarVenta = () => {
         axios.get('http://localhost:8081/tiposcomprobantes').then(response => setTiposComprobante(response.data));
         axios.get('http://localhost:8081/TipoPagos').then(response => setTiposPago(response.data));
     }, []);
+
+    useEffect(() => {
+        const fetchProductos = async () => {
+            try {
+                const response = await axios.get(`http://localhost:8081/usuario/${userId}/productos`);
+                const productosConStock = response.data.filter(producto => producto.Stock > 0);
+            setProductos(productosConStock); // Asegúrate de que `setProducts` está actualizando el estado correctamente
+            } catch (error) {
+                console.error('Error fetching productos:', error);
+            }
+        };
+    
+        if (userId) {
+            fetchProductos();
+        }
+    }, [userId]);
 
     const handleAddProduct = () => {
         if (selectedProducto && cantidad > 0) {
@@ -84,6 +99,7 @@ const AgregarVenta = () => {
                 cantidad: p.cantidad,
                 precio: p.precio
             })),
+            UsuarioId: userId
         }).then(response => {
             toast.current.show({ severity: 'success', summary: 'Éxito', detail: 'Venta realizada con éxito', life: 3000 });
             setVentas([]);
