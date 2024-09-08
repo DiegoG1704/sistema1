@@ -1,10 +1,13 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
+const multer = require("multer");  // Importa multer para manejar archivos
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 const bd = mysql.createConnection({
     host: "localhost",
@@ -22,42 +25,64 @@ bd.connect((err) => {
 });
 
 // Ruta para registrar un nuevo usuario
-app.post("/registro", async (req, res) => {
+app.post("/registro", (req, res) => {
     const { nombreUsuario, correo, contraseña } = req.body;
 
     if (!nombreUsuario || !correo || !contraseña) {
         return res.status(400).json({ success: false, message: 'Por favor, complete todos los campos' });
     }
 
-    try {
-        // Verificar si el usuario o correo ya existen
-        const checkUserQuery = 'SELECT * FROM Usuario WHERE NombreUsuario = ? OR Correo = ?';
-        bd.query(checkUserQuery, [nombreUsuario, correo], async (err, results) => {
-            if (err) {
-                console.error("Error verificando el usuario:", err);
-                return res.status(500).json({ success: false, message: 'Error en el servidor' });
-            }
+    // Verificar si el usuario o correo ya existen
+    const checkUserQuery = 'SELECT * FROM Usuario WHERE NombreUsuario = ? OR Correo = ?';
+    bd.query(checkUserQuery, [nombreUsuario, correo], (err, results) => {
+        if (err) {
+            console.error("Error verificando el usuario:", err);
+            return res.status(500).json({ success: false, message: 'Error en el servidor' });
+        }
 
-            if (results.length > 0) {
-                return res.status(409).json({ success: false, message: 'El nombre de usuario o correo ya están en uso' });
-            } else {
-                const hashedPassword = await bcrypt.hash(contraseña, saltRounds);
+        if (results.length > 0) {
+            return res.status(409).json({ success: false, message: 'El nombre de usuario o correo ya están en uso' });
+        } else {
+            const query = 'INSERT INTO Usuario (NombreUsuario, Contraseña, Correo) VALUES (?, ?, ?)';
+            bd.query(query, [nombreUsuario, contraseña, correo], (err, result) => {
+                if (err) {
+                    console.error("Error al registrar el usuario:", err);
+                    return res.status(500).json({ success: false, message: 'Error en el servidor' });
+                }
 
-                const query = 'INSERT INTO Usuario (NombreUsuario, Contraseña, Correo) VALUES (?, ?, ?)';
-                bd.query(query, [nombreUsuario, hashedPassword, correo], (err, result) => {
-                    if (err) {
-                        console.error("Error al registrar el usuario:", err);
-                        return res.status(500).json({ success: false, message: 'Error en el servidor' });
-                    }
+                res.status(201).json({ success: true, message: 'Usuario registrado exitosamente' });
+            });
+        }
+    });
+});
 
-                    res.status(201).json({ success: true, message: 'Usuario registrado exitosamente' });
-                });
-            }
-        });
-    } catch (error) {
-        console.error("Error al registrar el usuario:", error);
-        res.status(500).json({ success: false, message: 'Error en el servidor' });
+// Configuración de multer para subir imágenes
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');  // Carpeta donde se guardarán las imágenes
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);  // Guardar la imagen con nombre único
     }
+});
+
+const upload = multer({ storage: storage });
+
+// Ruta para subir una imagen de perfil
+app.post('/Usuario/:id/uploadProfileImage', upload.single('image'), (req, res) => {
+    const userId = req.params.id;
+    const imagePath = req.file.filename;  // Obtener el nombre del archivo guardado
+
+    // Actualizar la ruta de la imagen en la base de datos
+    const query = 'UPDATE Usuario SET fotoPerfil = ? WHERE Id = ?';
+    bd.query(query, [imagePath, userId], (err, result) => {
+        if (err) {
+            console.error("Error actualizando la imagen de perfil:", err);
+            res.status(500).send("Error al actualizar la imagen de perfil");
+            return;
+        }
+        res.json({ fotoPerfil: imagePath });  // Enviar solo el nombre del archivo
+    });
 });
 
 app.get("/productos-vendidos/:usuarioId", (req, res) => {
@@ -144,7 +169,11 @@ app.get("/productos", (req, res) => {
 app.get("/usuario/:usuarioId/productos", (req, res) => {
     const { usuarioId } = req.params;
     const query = `
-        SELECT p.*
+        SELECT p.Id, p.Nombre, p.PrecioVenta, p.FechaProduccion, p.Stock,
+        CASE 
+            WHEN p.Stock <= 0 THEN 'No Disponible'
+            ELSE 'Disponible'
+        END AS Estado
         FROM Producto p
         INNER JOIN UsuarioProducto up ON p.Id = up.ProductoId
         WHERE up.UsuarioId = ?
@@ -157,6 +186,7 @@ app.get("/usuario/:usuarioId/productos", (req, res) => {
         res.json(results);
     });
 });
+
 
 app.post("/productos", (req, res) => {
     const { Nombre, PrecioVenta, FechaProduccion, Stock, EmpaquetadoId, UsuarioId } = req.body;
@@ -257,32 +287,7 @@ app.get("/empaquetados/:id", (req, res) => {
     });
 });
 
-// Ruta para obtener todos los registros de la tabla Estado
-app.get("/estados", (req, res) => {
-    const sql = "SELECT * FROM Estado";
-    bd.query(sql, (err, result) => {
-        if (err) {
-            console.error("Error al obtener datos de Estado:", err);
-            res.status(500).json({ error: "Error al obtener datos de Estado" });
-            return;
-        }
-        res.json(result);
-    });
-});
 
-app.get("/estados/:id", (req, res) => {
-    const { id } = req.params;
-    bd.query("SELECT * FROM Estado WHERE Id = ?", [id], (err, results) => {
-        if (err) {
-            console.error("Error obteniendo producto:", err);
-            res.status(500).json({ error: "Error obteniendo producto" });
-        } else if (results.length === 0) {
-            res.status(404).json({ error: "Producto no encontrado" });
-        } else {
-            res.json(results[0]);
-        }
-    });
-});
 
 // Ruta para obtener todos los registros de la tabla Cliente
 app.get("/clientes", (req, res) => {
@@ -297,41 +302,31 @@ app.get("/clientes", (req, res) => {
     });
 });
 
-app.get("/clientes/:id", (req, res) => {
-    const { id } = req.params;
-    bd.query("SELECT * FROM Cliente WHERE Id = ?", [id], (err, results) => {
+
+
+// Ruta para obtener todos los registros de la tabla Usuario
+app.get('/clientes/:usuarioId', (req, res) => {
+    const usuarioId = req.params;
+    const query = 'SELECT * FROM Cliente WHERE UsuarioId = ?';
+
+    bd.query(query, [usuarioId], (err, results) => {
         if (err) {
-            console.error("Error obteniendo Cliente:", err);
-            res.status(500).json({ error: "Error obteniendo Cliente" });
-        } else if (results.length === 0) {
-            res.status(404).json({ error: "Cliente no encontrado" });
-        } else {
-            res.json(results[0]);
+            console.error('Error al obtener clientes:', err);
+            return res.status(500).json({ error: 'Error al obtener clientes' });
         }
+        res.json(results);
     });
 });
 
-// Ruta para obtener todos los registros de la tabla Cliente
-app.get("/Usuario", (req, res) => {
-    const sql = "SELECT * FROM Usuario";
-    bd.query(sql, (err, result) => {
-        if (err) {
-            console.error("Error al obtener datos de Cliente:", err);
-            res.status(500).json({ error: "Error al obtener datos de Cliente" });
-            return;
-        }
-        res.json(result);
-    });
-});
-
+// Ruta para obtener un usuario específico por su ID
 app.get("/Usuario/:id", (req, res) => {
     const { id } = req.params;
     bd.query("SELECT * FROM Usuario WHERE Id = ?", [id], (err, results) => {
         if (err) {
-            console.error("Error obteniendo Cliente:", err);
-            res.status(500).json({ error: "Error obteniendo Cliente" });
+            console.error("Error obteniendo Usuario:", err);
+            res.status(500).json({ error: "Error obteniendo Usuario" });
         } else if (results.length === 0) {
-            res.status(404).json({ error: "Cliente no encontrado" });
+            res.status(404).json({ error: "Usuario no encontrado" });
         } else {
             res.json(results[0]);
         }
@@ -339,10 +334,10 @@ app.get("/Usuario/:id", (req, res) => {
 });
 
 app.post('/clientes', (req, res) => {
-    const { DNI, Nombre, Apellido, Telefono, Correo } = req.body;
+    const { DNI, Nombre, Apellido, Telefono, Correo, UsuarioId } = req.body;
     
-    bd.query("INSERT INTO Cliente (DNI, Nombre, Apellido, Telefono, Correo) VALUES (?, ?, ?, ?, ?)", 
-        [DNI, Nombre, Apellido, Telefono, Correo], 
+    bd.query("INSERT INTO Cliente (DNI, Nombre, Apellido, Telefono, Correo, UsuarioId) VALUES (?, ?, ?, ?, ?, ?)", 
+        [DNI, Nombre, Apellido, Telefono, Correo, UsuarioId], 
         (err, result) => {
             if (err) {
                 console.error('Error insertando cliente:', err);

@@ -53,3 +53,20 @@
   height: 35px;
 }
 
+.user-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%; /* Hace que el botón sea circular */
+  border: 1px solid rgb(0, 0, 0); /* Borde de 1px de ancho y color azul */
+  padding: 0; /* Elimina el relleno adicional */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white; /* Fondo blanco */
+}
+
+.user-icon {
+  width: 60px; /* Tamaño de la imagen dentro del botón */
+  height: 60px;
+  object-fit: cover;
+}

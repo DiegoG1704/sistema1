@@ -33,7 +33,7 @@ function Productos({ userId }) {
   });
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [empaquetados, setEmpaquetados] = useState([]);
-  const [estados, setEstados] = useState([]);
+
   const [ventas, setVentas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [tiposComprobante, setTiposComprobante] = useState([]);
@@ -41,7 +41,7 @@ function Productos({ userId }) {
 
   useEffect(() => {
     fetchEmpaquetados();
-    fetchEstados();
+
     fetchVentas();
     fetchClientes();
     fetchTipoPagos();
@@ -63,14 +63,6 @@ function Productos({ userId }) {
     }
   };
 
-  const fetchEstados = async () => {
-    try {
-      const response = await axios.get('http://localhost:8081/estados');
-      setEstados(response.data);
-    } catch (error) {
-      console.error('Error fetching estados:', error);
-    }
-  };
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -281,7 +273,7 @@ const editProduct = async () => {
           <Column field="EmpaquetadoId" header="Empaquetado" body={(rowData) => getEmpaquetadoNombreById(rowData.EmpaquetadoId)}></Column>
           <Column header="Editar" body={EditarButton}></Column>
           <Column header="Eliminar" body={EliminarButton}></Column>
-          <Column header="Status" body={statusBodyTemplate}></Column>
+          <Column header="Status" field='Estado'></Column>
         </DataTable>
       </div>
 

@@ -33,7 +33,7 @@ const AgregarVenta = ({userId}) => {
             const productosConStock = response.data.filter(producto => producto.Stock > 0);
             setProductos(productosConStock);
         });
-        axios.get('http://localhost:8081/clientes').then(response => setClientes(response.data));
+        axios.get(`http://localhost:8081/clientes/${userId}`).then(response => setClientes(response.data));
         axios.get('http://localhost:8081/tiposcomprobantes').then(response => setTiposComprobante(response.data));
         axios.get('http://localhost:8081/TipoPagos').then(response => setTiposPago(response.data));
     }, []);
@@ -120,7 +120,8 @@ const AgregarVenta = ({userId}) => {
         Nombre: '',
         Apellido: '',
         Telefono: '',
-        Correo: ''
+        Correo: '',
+        UsuarioId: userId
     });
 
     const handleInputChangeCliente = (e, field) => {

@@ -1,0 +1,73 @@
+.usuario-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  position: relative; /* Necesario para posicionar el botón en relación a este contenedor */
+}
+
+.user-header {
+  position: relative; /* Para posicionar el botón dentro de este contenedor */
+}
+
+.user-image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.user-icon1 {
+  display: block;
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+
+
+.edit-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgb(26, 92, 153);
+  background-color: white;
+  position: absolute; /* Posiciona el botón en relación al contenedor */
+  bottom: 5px; /* Ajusta la distancia desde el borde superior */
+  right: 10px; /* Ajusta la distancia desde el borde derecho */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1; /* Asegura que el botón esté por encima de la imagen */
+}
+
+.edit-button .pi-pencil {
+  color: rgb(26, 92, 153);
+}
+
+.user-info {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan si no caben en una fila */
+  justify-content: center;
+}
+
+.info-field {
+  display: flex;
+  align-items: center;
+  margin: 10px 20px; /* Ajusta el espacio entre los campos */
+}
+
+.info-label {
+  font-weight: bold;
+  margin-right: 10px; /* Espacio entre la etiqueta y el campo de entrada */
+}
+
+.info-input {
+  max-width: 200px; /* Ajusta el tamaño del campo de entrada */
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

@@ -1,3 +1,5 @@
+// App.js
+
 import React, { useState } from 'react';
 import './App.css';
 import Navbar from './Dashboard/Navar';
@@ -11,6 +13,7 @@ import Login from './Login/login';
 import Registro from './Login/registro';
 import Sidebar from './Dashboard';
 import Productos from './Productos/VProductos';
+import VUsuario from './pagina/Usuario';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -21,7 +24,6 @@ function App() {
   };
 
   const handleLogin = (userData) => {
-    console.log('User data received in App:', userData); // Verifica que userData tiene los datos correctos
     setUser(userData);
   };
 
@@ -29,22 +31,31 @@ function App() {
     setUser(null);
   };
 
+  const handleProfileImageUpdate = (newImage) => {
+    // Actualiza el estado del usuario con la nueva imagen de perfil
+    setUser(prevState => ({
+      ...prevState,
+      fotoPerfil: newImage
+    }));
+  };
+
   return (
     <Router>
       <div className="App">
         {user ? (
           <>
-            <Navbar />
+            <Navbar userId={user.Id} fotoPerfil={user.fotoPerfil} onLogout={logout} />
             <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} onLogout={logout} />
             <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
               <Routes>
                 <Route path="/" element={<Navigate to="/principal" />} />
                 <Route path="/principal" element={<Productos userId={user.Id} />} />
-                <Route path="/tecnologia" element={<Tecnologia userId={user.Id}/>} />
+                <Route path="/tecnologia" element={<Tecnologia userId={user.Id} />} />
                 <Route path="/gastos" element={<Gastos />} />
                 <Route path="/maquinas" element={<Maquinas userId={user.Id} />} />
                 <Route path="/ganancias" element={<Ganancias />} />
                 <Route path="/venta" element={<PagVenta />} />
+                <Route path="/usuario" element={<VUsuario userId={user.Id} onProfileImageUpdated={handleProfileImageUpdate} />} />
               </Routes>
             </div>
           </>
